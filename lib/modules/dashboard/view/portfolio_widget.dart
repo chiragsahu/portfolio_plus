@@ -8,38 +8,128 @@ class PortfolioWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      Row(
-        children: <Widget>[
-          Column(
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.greyBorder),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(
             children: <Widget>[
-              Text(
-                'Current Value',
-                style: Ts.regular14(AppColors.black),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Current Value',
+                    style: Ts.regular14(AppColors.black),
+                  ),
+                  4.height,
+                  Text(
+                    '₹ 100000.00',
+                    style: Ts.semiBold24(AppColors.black),
+                  ),
+                ],
               ),
-              8.height,
-              Text(
-                '₹ 100000.00',
-                style: Ts.bold20(AppColors.black),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: <Widget>[
+                  Text(
+                    'Invested Amount',
+                    style: Ts.regular14(AppColors.black),
+                  ),
+                  6.height,
+                  Text(
+                    '₹ 100000.00',
+                    style: Ts.semiBold18(AppColors.black),
+                  ),
+                ],
               ),
             ],
           ),
-          Spacer(),
-          Column(
+          12.height,
+          Row(
             children: <Widget>[
-              Text(
-                'Invested Amount',
-                style: Ts.regular14(AppColors.black),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Row(
+                    children: [
+                      Text(
+                        'Today\'s PnL',
+                        style: Ts.regular14(AppColors.black),
+                      ),
+                      4.width,
+                      const Icon(
+                        Icons.arrow_drop_up,
+                        color: AppColors.green,
+                      ),
+                    ],
+                  ),
+                  6.height,
+                  Row(
+                    children: [
+                      Text(
+                        '₹ 1000',
+                        style: Ts.semiBold18(AppColors.black),
+                      ),
+                      4.width,
+                      Text(
+                        '(+10.00%)',
+                        style: Ts.regular14(AppColors.green),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              8.height,
-              Text(
-                '₹ 100000.00',
-                style: Ts.bold20(AppColors.black),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: <Widget>[
+                  Text(
+                    'Overall Return',
+                    style: Ts.regular14(AppColors.black),
+                  ),
+                  6.height,
+                  Row(
+                    children: [
+                      Text(
+                        '₹ 10000',
+                        style: Ts.semiBold18(AppColors.black),
+                      ),
+                      4.width,
+                      Text(
+                        '(+10.00%)',
+                        style: Ts.regular14(AppColors.green),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+          4.height,
+          Text(
+            "PnL is calculated based on LTP.",
+            style: Ts.regular12(
+              AppColors.grey,
+            ),
+          ),
+          4.height,
+        ]),
       ),
-    ]);
+    );
   }
 }

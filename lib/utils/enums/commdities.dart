@@ -1,18 +1,30 @@
-// enum AssetClass {
-//   stock, bond, mf, etf, nps, gold, silver, cash, fd, realestate, other
-// }
-//
-// enum MutualFundType {
-//   equity, debt, hybrid, solution, other
-// }
-
 import 'dart:core';
+import 'package:portfolio_plus/utils/enums/transaction.dart';
+
+class AssetPosition {
+  AssetPosition({
+    required this.positionType,
+    required this.assetValue,
+    required this.buyUnits,
+    required this.sellUnits,
+    this.id,
+  });
+
+  final PositionType positionType;
+  final double assetValue;
+  final double buyUnits;
+  final double sellUnits;
+  final String? id;
+}
 
 abstract class Investible<T> {
   T get type;
   String get name;
   String? get id;
-  int get quantity;
+  double get quantity;
+  int get assetValue;
+  String get notes;
+  List<AssetPosition> get assetPositions;
 
   void display();
 
@@ -26,12 +38,13 @@ abstract class Investible<T> {
 }
 
 class Stocks extends Investible<double> {
-
   Stocks({
     required this.type,
     required this.name,
-    required this.quantity,
+    required this.assetValue,
     this.id,
+    this.notes = '',
+    this.assetPositions = const [],
   });
 
   @override
@@ -63,11 +76,33 @@ class Stocks extends Investible<double> {
   String name;
 
   @override
-  int quantity;
+  late double quantity = assetPositions.fold(
+      0, (previousValue, element) => previousValue + element.buyUnits);
 
   @override
   double type;
 
   @override
   String? id;
+
+  @override
+  int assetValue;
+
+  @override
+  String notes;
+
+  @override
+  List<AssetPosition> assetPositions;
+
+  List<AssetPosition> get openPositions {
+    return assetPositions
+        .where((element) => element.buyUnits > element.sellUnits)
+        .toList();
+  }
+
+  List<AssetPosition> get closedPositions {
+    return assetPositions
+        .where((element) => element.buyUnits == element.sellUnits)
+        .toList();
+  }
 }

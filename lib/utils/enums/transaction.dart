@@ -3,3 +3,8 @@ enum TransastionType {
   sell,
   deposit,
 }
+
+enum PositionType {
+  open,
+  close,
+}
