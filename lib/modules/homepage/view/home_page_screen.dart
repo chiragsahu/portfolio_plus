@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:portfolio_plus/utils/colors.dart';
+import 'package:portfolio_plus/utils/ts.dart';
 
 import '../../dashboard/view/dashboard_screen.dart';
 import '../../portfolio/view/portfolio_view.dart';
@@ -45,7 +47,15 @@ class HomePageScreen extends ConsumerWidget {
     final bottomNavProvider = ref.watch(bottomNavStateProvider);
     return SafeArea(
       child: Scaffold(
+        backgroundColor: AppColors.primaryWhite,
         bottomNavigationBar: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: AppColors.primaryWhite,
+          unselectedIconTheme: const IconThemeData(color: AppColors.grey2),
+          unselectedLabelStyle: const TextStyle(color: AppColors.green),
+          selectedIconTheme: const IconThemeData(color: AppColors.primaryColor),
+          selectedLabelStyle: Ts.regular10(AppColors.black),
+          showSelectedLabels: true,
           items: bottomNavigationBarItems,
           onTap: (index) {
             print('index: $index');

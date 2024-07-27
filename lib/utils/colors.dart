@@ -27,15 +27,20 @@ const iconColorSecondaryDark = Color(0xFFA8ABAD);
 const appShadowColorDark = Color(0x1A3E3942);
 
 class AppColors {
+  static const primaryWhite = Color.fromRGBO(248, 237, 237, 1);
   static const white = Color.fromRGBO(255, 255, 255, 1);
   static const white_o9 = Color.fromRGBO(255, 255, 255, 0.9);
   static const blue = Color.fromRGBO(47, 101, 185, 1);
   static const black = Color.fromRGBO(7, 20, 46, 1);
-  static const primaryColor = Color.fromRGBO(251, 171, 63, 1);
+  static const primaryColor = Color.fromRGBO(124, 71, 137, 1);
   static const greyBorder = Color.fromRGBO(153, 153, 153, 0.7);
   static const blueGrey = Color.fromRGBO(111, 127, 146, 1);
   static const yellow = Color.fromRGBO(251, 183, 62, 1);
   static const grey = Color.fromRGBO(111, 127, 146, 1);
+  static const grey2 = Color.fromRGBO(153, 153, 153, 1);
+  static const grey4 = Color.fromRGBO(229, 229, 229, 1);
+
+  static const background = Color.fromRGBO(204, 240, 195, 1);
 
   static const green = Colors.green;
 }
