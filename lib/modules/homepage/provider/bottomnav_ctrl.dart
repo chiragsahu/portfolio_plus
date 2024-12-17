@@ -5,13 +5,12 @@ part 'bottomnav_ctrl.g.dart';
 @riverpod
 class BottomNavState extends _$BottomNavState {
   void updateBottomBar(PageModel pageModel) {
-    print('updateBottomBar: ${pageModel.page}');
     state = pageModel;
   }
 
   @override
   PageModel build() {
-    return const PageModel(NavigationBarEvent.HOME, 0);
+    return const PageModel(NavigationBarEvent.home, 0);
   }
 }
 
@@ -21,4 +20,4 @@ class PageModel {
   final int index;
 }
 
-enum NavigationBarEvent { HOME, SEARCH, SETTINGS }
+enum NavigationBarEvent { home, portfolio, tools, profile, assets }

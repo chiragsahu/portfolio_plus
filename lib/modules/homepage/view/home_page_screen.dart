@@ -8,29 +8,49 @@ import '../../portfolio/view/portfolio_view.dart';
 import '../../profile/view/profile_screen.dart';
 import '../provider/bottomnav_ctrl.dart';
 
+class CustomBottomNavBarItem extends StatelessWidget {
+  final IconData icon;
+  final bool isSelected;
+  final String label;
+  const CustomBottomNavBarItem(
+      {super.key, required this.icon, required this.label, this.isSelected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        Icon(
+          icon,
+          color: isSelected ? AppColors.primaryColor : AppColors.grey2,
+        ),
+        Text(
+          label,
+          style: Ts.regular14(AppColors.grey),
+        ),
+      ],
+    );
+  }
+}
+
 class HomePageScreen extends ConsumerWidget {
   const HomePageScreen({super.key});
 
   final bottomNavigationBarItems = const [
     BottomNavigationBarItem(
       icon: Icon(Icons.home),
-      label: 'Dashboard',
+      label: '',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.search),
-      label: 'Portfolio',
+      label: '',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.search),
-      label: 'Assets',
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.search),
-      label: 'Tools',
+      label: '',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.person),
-      label: 'Profile',
+      label: '',
     ),
   ];
 
@@ -39,33 +59,76 @@ class HomePageScreen extends ConsumerWidget {
     PortfolioScreen(),
     ProfileScreen(),
     ProfileScreen(),
-    ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bottomNavProvider = ref.watch(bottomNavStateProvider);
+    final isAssetSelected = bottomNavProvider.index == 5;
+
     return SafeArea(
       child: Scaffold(
         backgroundColor: AppColors.primaryWhite,
-        bottomNavigationBar: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: AppColors.primaryWhite,
-          unselectedIconTheme: const IconThemeData(color: AppColors.grey2),
-          unselectedLabelStyle: const TextStyle(color: AppColors.green),
-          selectedIconTheme: const IconThemeData(color: AppColors.primaryColor),
-          selectedLabelStyle: Ts.regular10(AppColors.black),
-          showSelectedLabels: true,
-          items: bottomNavigationBarItems,
-          onTap: (index) {
-            print('index: $index');
-            ref.read(bottomNavStateProvider.notifier).updateBottomBar(
-                PageModel(NavigationBarEvent.values[index], index));
-          },
-          currentIndex: bottomNavProvider.index,
+        bottomNavigationBar: BottomAppBar(
+          height: 75,
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 15,
+          color: AppColors.primaryWhite,
+          clipBehavior: Clip.antiAlias,
+          // child: SizedBox(
+          //   height: 50,
+          //   child: BottomNavigationBar(
+          //     type: BottomNavigationBarType.fixed,
+          //     backgroundColor: AppColors.primaryWhite,
+          //     unselectedIconTheme: const IconThemeData(color: AppColors.grey2),
+          //     selectedIconTheme: isAssetSelected
+          //         ? const IconThemeData(color: AppColors.grey2)
+          //         : const IconThemeData(color: AppColors.primaryColor),
+          //     showSelectedLabels: true,
+          //     items: bottomNavigationBarItems,
+          //     onTap: (index) {
+          //       ref.read(bottomNavStateProvider.notifier).updateBottomBar(
+          //           PageModel(NavigationBarEvent.values[index], index));
+          //     },
+          //     currentIndex: isAssetSelected ? 0 : bottomNavProvider.index,
+          //   ),
+          // ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+             const CustomBottomNavBarItem(icon: Icons.home, label: 'Home', isSelected: true),
+             const CustomBottomNavBarItem(icon: Icons.home, label: 'Home', isSelected: false),
+             const CustomBottomNavBarItem(icon: Icons.home, label: 'Home', isSelected: false),
+             const CustomBottomNavBarItem(icon: Icons.home, label: 'Home', isSelected: false),
+            ],
+          ),
+        ),
+        extendBody: true,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        floatingActionButton: Transform.scale(
+          scale: 1.25,
+          child: FloatingActionButton(
+            shape: const CircleBorder(),
+            onPressed: () {
+              ref.read(bottomNavStateProvider.notifier).updateBottomBar(
+                  const PageModel(NavigationBarEvent.assets, 5));
+            },
+            backgroundColor: isAssetSelected
+                ? AppColors.primaryColor
+                : AppColors.primaryWhite,
+            child: Icon(
+              Icons.cases_outlined,
+              color: isAssetSelected
+                  ? AppColors.primaryWhite
+                  : AppColors.primaryColor,
+            ),
+          ),
         ),
         body: Center(
-          child: pages[bottomNavProvider.index],
+          child: isAssetSelected
+              ? const PortfolioScreen()
+              : pages[bottomNavProvider.index],
         ),
       ),
     );
