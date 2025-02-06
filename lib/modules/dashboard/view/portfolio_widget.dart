@@ -127,7 +127,7 @@ class PortfolioWidget extends StatelessWidget {
               AppColors.grey,
             ),
           ),
-          4.height,
+          2.height,
         ]),
       ),
     );

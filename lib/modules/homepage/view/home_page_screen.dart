@@ -8,6 +8,7 @@ import 'package:portfolio_plus/utils/ts.dart';
 import '../../dashboard/view/dashboard_screen.dart';
 import '../../portfolio/view/portfolio_view.dart';
 import '../../profile/view/profile_screen.dart';
+import '../../tools/view/profile_screen.dart';
 import '../provider/bottomnav_ctrl.dart';
 
 class CustomBottomNavBarItem extends StatelessWidget {
@@ -52,7 +53,7 @@ class HomePageScreen extends ConsumerWidget {
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.search),
-      label: 'Analysis',
+      label: 'Tools',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.person),
@@ -63,7 +64,7 @@ class HomePageScreen extends ConsumerWidget {
   final List<Widget> pages = const [
     DashboardScreen(),
     PortfolioScreen(),
-    ProfileScreen(),
+    ToolsScreen(),
     ProfileScreen(),
   ];
 
