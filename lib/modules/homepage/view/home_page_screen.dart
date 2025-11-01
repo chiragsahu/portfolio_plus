@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../dashboard/view/dashboard_screen.dart';
 import '../../portfolio/view/portfolio_view.dart';
 import '../../profile/view/profile_screen.dart';
+import '../../tools/view/tools_screen.dart';
 import '../provider/bottomnav_ctrl.dart';
 
 class HomePageScreen extends ConsumerWidget {
@@ -15,15 +16,15 @@ class HomePageScreen extends ConsumerWidget {
       label: 'Dashboard',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.search),
+      icon: Icon(Icons.pie_chart),
       label: 'Portfolio',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.search),
+      icon: Icon(Icons.account_balance_wallet),
       label: 'Assets',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.search),
+      icon: Icon(Icons.build),
       label: 'Tools',
     ),
     BottomNavigationBarItem(
@@ -36,7 +37,7 @@ class HomePageScreen extends ConsumerWidget {
     DashboardScreen(),
     PortfolioScreen(),
     ProfileScreen(),
-    ProfileScreen(),
+    ToolsScreen(),
     ProfileScreen(),
   ];
 
@@ -53,10 +54,14 @@ class HomePageScreen extends ConsumerWidget {
                 PageModel(NavigationBarEvent.values[index], index));
           },
           currentIndex: bottomNavProvider.index,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.blueGrey[900],
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.grey,
+          showSelectedLabels: false,
+          showUnselectedLabels: true,
         ),
-        body: Center(
-          child: pages[bottomNavProvider.index],
-        ),
+        body: Center(child: pages[bottomNavProvider.index]),
       ),
     );
   }

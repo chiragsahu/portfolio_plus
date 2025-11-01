@@ -6,7 +6,7 @@ part of 'bottomnav_ctrl.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$bottomNavStateHash() => r'b7eed3e836169acf2ca09c15c57ff7b25dfd8afd';
+String _$bottomNavStateHash() => r'54d1c8f7d67afe7a7651bdd5b73a583288e44413';
 
 /// See also [BottomNavState].
 @ProviderFor(BottomNavState)
