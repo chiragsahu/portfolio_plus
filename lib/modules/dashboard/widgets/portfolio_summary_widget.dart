@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/portfolio_provider.dart';
+import 'package:portfolio_plus/utils/app_utils.dart';
 import 'package:portfolio_plus/utils/colors.dart';
+import 'package:portfolio_plus/utils/enums/investment_type.dart';
 import 'package:portfolio_plus/utils/ts.dart';
+import 'package:portfolio_plus/utils/extensions/number_extension.dart';
+import 'package:portfolio_plus/modules/homepage/provider/bottomnav_ctrl.dart';
 
 class PortfolioSummaryWidget extends ConsumerWidget {
   const PortfolioSummaryWidget({super.key});
@@ -10,35 +14,29 @@ class PortfolioSummaryWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final portfoliosAsync = ref.watch(portfolioListProvider);
-    
+
     return portfoliosAsync.when(
       data: (portfolios) {
         if (portfolios.isEmpty) {
           return _buildEmptyState();
         }
-        
+
         return Column(
           children: [
-            _buildHeader(),
+            _buildHeader(context, ref),
             const SizedBox(height: 16),
-            _buildPortfolioCards(portfolios),
+            _buildPortfolioCards(context, ref, portfolios),
             const SizedBox(height: 16),
             _buildOverallStats(portfolios),
           ],
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red[400],
-            ),
+            Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
             const SizedBox(height: 16),
             Text(
               'Error loading portfolios',
@@ -62,11 +60,7 @@ class PortfolioSummaryWidget extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.folder_open,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'No portfolios yet',
@@ -83,42 +77,160 @@ class PortfolioSummaryWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.blueGrey,
-            AppColors.blueGrey.withOpacity(0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _buildHeader(BuildContext context, WidgetRef ref) {
+    final portfoliosAsync = ref.watch(portfolioListProvider);
+    
+    return portfoliosAsync.when(
+      data: (portfolios) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.blueGrey, AppColors.blueGrey.withOpacity(0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Portfolio Overview', style: Ts.semiBold24(Colors.white)),
+              const SizedBox(height: 4),
+              Text(
+                'Track all your investments in one place',
+                style: Ts.regular14(Colors.white70),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildHeaderStatCard(
+                      'Total Invested',
+                      _calculateTotalInvested(portfolios).getAmount,
+                      Icons.account_balance_wallet,
+                      Colors.white70,
+                      () {},
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildHeaderStatCard(
+                      'Current Value',
+                      _calculateCurrentValue(portfolios).getAmount,
+                      Icons.trending_up,
+                      Colors.white70,
+                      () {},
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.blueGrey, AppColors.blueGrey.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+          ),
         ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Portfolio Overview', style: Ts.semiBold24(Colors.white)),
+            const SizedBox(height: 4),
+            Text(
+              'Track all your investments in one place',
+              style: Ts.regular14(Colors.white70),
+            ),
+          ],
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Portfolio Overview',
-            style: Ts.semiBold24(Colors.white),
+      error: (_, __) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.blueGrey, AppColors.blueGrey.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Track all your investments in one place',
-            style: Ts.regular14(Colors.white70),
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(20),
           ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Portfolio Overview', style: Ts.semiBold24(Colors.white)),
+            const SizedBox(height: 4),
+            Text(
+              'Track all your investments in one place',
+              style: Ts.regular14(Colors.white70),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPortfolioCards(List portfolios) {
+  Widget _buildHeaderStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Ts.regular12(color),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: Ts.semiBold18(Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPortfolioCards(BuildContext context, WidgetRef ref, List portfolios) {
     return Column(
       children: [
         Row(
@@ -129,37 +241,10 @@ class PortfolioSummaryWidget extends ConsumerWidget {
                 portfolios.length.toString(),
                 Icons.folder,
                 Colors.blue,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'Total Invested',
-                '₹${_calculateTotalInvested(portfolios).toStringAsFixed(2)}',
-                Icons.account_balance_wallet,
-                Colors.green,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                'Current Value',
-                '₹${_calculateCurrentValue(portfolios).toStringAsFixed(2)}',
-                Icons.trending_up,
-                Colors.orange,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                'Total P&L',
-                '₹${_calculateTotalPnL(portfolios).toStringAsFixed(2)}',
-                Icons.show_chart,
-                _calculateTotalPnL(portfolios) >= 0 ? Colors.green : Colors.red,
+                () {
+                  // Navigate to 2nd tab (Portfolio tab)
+                  _navigateToPortfolioTab(context, ref);
+                },
               ),
             ),
             const SizedBox(width: 12),
@@ -169,58 +254,79 @@ class PortfolioSummaryWidget extends ConsumerWidget {
                 '${_calculateTotalPnLPercentage(portfolios).toStringAsFixed(2)}%',
                 Icons.percent,
                 _calculateTotalPnL(portfolios) >= 0 ? Colors.green : Colors.red,
+                () {},
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        // Total P&L in full width column
+        _buildStatCard(
+          'Total P&L',
+          _calculateTotalPnL(portfolios).getAmount,
+          Icons.show_chart,
+          _calculateTotalPnL(portfolios) >= 0 ? Colors.green : Colors.red,
+          () {},
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                color: color,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Ts.regular12(Colors.grey),
-                    ),
-                    Text(
-                      value,
-                      style: Ts.semiBold18(color),
-                    ),
-                  ],
+  void _navigateToPortfolioTab(BuildContext context, WidgetRef ref) {
+    // Navigate to portfolio tab (index 1)
+    ref.read(bottomNavStateProvider.notifier).updateBottomBar(
+      const PageModel(NavigationBarEvent.PORTFOLIO, 1),
+    );
+  }
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: Ts.regular12(Colors.grey)),
+                      Text(
+                        value,
+                        style: title == 'P&L %'
+                            ? Ts.semiBold16(color)
+                            : Ts.semiBold18(color),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -244,10 +350,7 @@ class PortfolioSummaryWidget extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Performance Summary',
-            style: Ts.semiBold18(AppColors.black),
-          ),
+          Text('Performance Summary', style: Ts.semiBold18(AppColors.black)),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -269,10 +372,7 @@ class PortfolioSummaryWidget extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            'Portfolio Distribution',
-            style: Ts.semiBold18(AppColors.black),
-          ),
+          Text('Portfolio Distribution', style: Ts.semiBold18(AppColors.black)),
           const SizedBox(height: 12),
           _buildPortfolioDistribution(portfolios),
         ],
@@ -290,15 +390,9 @@ class PortfolioSummaryWidget extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: Ts.regular12(Colors.grey),
-          ),
+          Text(label, style: Ts.regular12(Colors.grey)),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: Ts.semiBold16(color),
-          ),
+          Text(value, style: Ts.semiBold16(color)),
         ],
       ),
     );
@@ -306,15 +400,18 @@ class PortfolioSummaryWidget extends ConsumerWidget {
 
   Widget _buildPortfolioDistribution(List portfolios) {
     // Group portfolios by investment type
-    Map<String, int> portfolioCountByType = {};
+    Map<InvestmentType, int> portfolioCountByType = {};
     for (final portfolio in portfolios) {
-      final type = portfolio.investmentType.name;
+      final type = portfolio.investmentType;
+      Utils.printLog("portfolio ${type}");
       portfolioCountByType[type] = (portfolioCountByType[type] ?? 0) + 1;
     }
 
     return Column(
       children: portfolioCountByType.entries.map((entry) {
-        final percentage = portfolios.isNotEmpty ? (entry.value / portfolios.length * 100) : 0.0;
+        final percentage = portfolios.isNotEmpty
+            ? (entry.value / portfolios.length * 100)
+            : 0.0;
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Row(
@@ -322,7 +419,7 @@ class PortfolioSummaryWidget extends ConsumerWidget {
               Expanded(
                 flex: 3,
                 child: Text(
-                  entry.key,
+                  entry.key.displayName,
                   style: Ts.regular12(Colors.grey),
                 ),
               ),
@@ -331,7 +428,9 @@ class PortfolioSummaryWidget extends ConsumerWidget {
                 child: LinearProgressIndicator(
                   value: percentage / 100,
                   backgroundColor: Colors.grey[300],
-                  valueColor: AlwaysStoppedAnimation<Color>(_getInvestmentTypeColor(entry.key)),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    _getInvestmentTypeColor(entry.key.displayName),
+                  ),
                 ),
               ),
               SizedBox(
@@ -345,7 +444,7 @@ class PortfolioSummaryWidget extends ConsumerWidget {
                 width: 50,
                 child: Text(
                   '${percentage.toStringAsFixed(1)}%',
-                  style: Ts.regular12(Colors.grey),
+                  style: Ts.regular10(Colors.grey),
                 ),
               ),
             ],
@@ -357,19 +456,19 @@ class PortfolioSummaryWidget extends ConsumerWidget {
 
   Color _getInvestmentTypeColor(String type) {
     switch (type) {
-      case 'stocks':
+      case 'Stocks':
         return Colors.blue;
-      case 'crypto':
+      case 'Cryptocurrency':
         return Colors.orange;
-      case 'mutualFunds':
+      case 'Mutual Funds':
         return Colors.green;
-      case 'commodities':
+      case 'Commodities':
         return Colors.brown;
-      case 'bonds':
+      case 'Bonds':
         return Colors.purple;
-      case 'realEstate':
+      case 'Real Estate':
         return Colors.teal;
-      case 'custom':
+      case 'Custom':
         return Colors.grey;
       default:
         return Colors.grey;
@@ -395,12 +494,15 @@ class PortfolioSummaryWidget extends ConsumerWidget {
   }
 
   double _calculateTotalPnL(List portfolios) {
-    return _calculateCurrentValue(portfolios) - _calculateTotalInvested(portfolios);
+    return _calculateCurrentValue(portfolios) -
+        _calculateTotalInvested(portfolios);
   }
 
   double _calculateTotalPnLPercentage(List portfolios) {
     final invested = _calculateTotalInvested(portfolios);
-    return invested > 0 ? (_calculateTotalPnL(portfolios) / invested) * 100 : 0.0;
+    return invested > 0
+        ? (_calculateTotalPnL(portfolios) / invested) * 100
+        : 0.0;
   }
 
   String _getBestPerformer(List portfolios) {

@@ -433,7 +433,7 @@ class _UniversalCalculatorScreenState extends State<UniversalCalculatorScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: AppColors.primaryColor),
+              borderSide: const BorderSide(color: AppColors.primaryColor),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,

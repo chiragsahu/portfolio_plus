@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portfolio_plus/models/portfolio.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/portfolio_provider.dart';
@@ -60,131 +61,167 @@ class _PortfolioListViewState extends ConsumerState<PortfolioListView> {
             tooltip: 'Compare Portfolios',
           ),
           IconButton(
-        icon: const Icon(Icons.add),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ProviderScope(child: AddPortfolioView()),
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProviderScope(child: AddPortfolioView()),
+                ),
+              );
+            },
+          ),
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () {
+                _showDeleteAllDialog(context);
+              },
+              tooltip: 'Delete All Portfolios (Debug)',
             ),
-          );
-        },
-      ),
         ],
       ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search portfolios...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(portfolioListProvider.notifier).loadPortfolios();
+        },
+        child: Column(
+          children: [
+            // Search bar
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search portfolios...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[100],
                 ),
-                filled: true,
-                fillColor: Colors.grey[100],
               ),
             ),
-          ),
-          
-          // Portfolio list
-          Expanded(
-            child: portfoliosAsync.when(
-              data: (portfolios) {
-                if (portfolios.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.folder_open,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _searchQuery.isEmpty
-                              ? 'No portfolios yet'
-                              : 'No portfolios found',
-                          style: Ts.regular18(Colors.grey[600] ?? Colors.grey),
-                        ),
-                        const SizedBox(height: 16),
-                        if (_searchQuery.isEmpty)
-                          ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ProviderScope(child: AddPortfolioView()),
-                                ),
-                              );
-                            },
-                            child: const Text('Create Your First Portfolio'),
+            
+            // Portfolio list
+            Expanded(
+              child: portfoliosAsync.when(
+                data: (portfolios) {
+                  if (portfolios.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.folder_open,
+                            size: 64,
+                            color: Colors.grey[400],
                           ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: portfolios.length,
-                  itemBuilder: (context, index) {
-                    final portfolio = portfolios[index];
-                    return PortfolioCard(
-                      portfolio: portfolio,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PortfolioDetailView(
-                              portfolioId: portfolio.id!,
+                          const SizedBox(height: 16),
+                          Text(
+                            _searchQuery.isEmpty
+                                ? 'No portfolios yet'
+                                : 'No portfolios found',
+                            style: Ts.regular18(Colors.grey[600] ?? Colors.grey),
+                          ),
+                          const SizedBox(height: 16),
+                          if (_searchQuery.isEmpty)
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ProviderScope(child: AddPortfolioView()),
+                                  ),
+                                );
+                              },
+                              child: const Text('Create Your First Portfolio'),
                             ),
-                          ),
-                        );
-                      },
+                        ],
+                      ),
                     );
-                  },
-                );
-              },
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              error: (error, stack) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.red[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error loading portfolios',
-                      style: Ts.regular18(Colors.red[600] ?? Colors.red),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      error.toString(),
-                      style: Ts.regular14(Colors.grey[600] ?? Colors.grey),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        ref.read(portfolioListProvider.notifier).loadPortfolios();
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ],
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: portfolios.length,
+                    itemBuilder: (context, index) {
+                      final portfolio = portfolios[index];
+                      return PortfolioCard(
+                        portfolio: portfolio,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PortfolioDetailView(
+                                portfolioId: portfolio.id!,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                error: (error, stack) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading portfolios',
+                        style: Ts.regular18(Colors.red[600] ?? Colors.red),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        error.toString(),
+                        style: Ts.regular14(Colors.grey[600] ?? Colors.grey),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          ref.read(portfolioListProvider.notifier).loadPortfolios();
+                        },
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteAllDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete All Portfolios'),
+        content: const Text('Are you sure you want to delete all portfolios? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ref.read(portfolioListProvider.notifier).deleteAllPortfolios();
+            },
+            child: const Text('Delete All'),
           ),
         ],
       ),
@@ -334,4 +371,5 @@ class PortfolioCard extends StatelessWidget {
         return Icons.folder;
     }
   }
+
 }

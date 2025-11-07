@@ -150,4 +150,10 @@ class PortfolioRepository {
       'portfoliosByType': portfoliosByType,
     };
   }
+
+  // Delete all portfolios
+  Future<void> deleteAllPortfolios() async {
+    final db = await _databaseService.database;
+    await db.delete('portfolios');
+  }
 }

@@ -74,6 +74,15 @@ class PortfolioListNotifier extends StateNotifier<AsyncValue<List<Portfolio>>> {
       state = AsyncValue.error(error, stackTrace);
     }
   }
+
+  Future<void> deleteAllPortfolios() async {
+    try {
+      await _repository.deleteAllPortfolios();
+      await loadPortfolios();
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
 }
 
 // Individual portfolio provider
