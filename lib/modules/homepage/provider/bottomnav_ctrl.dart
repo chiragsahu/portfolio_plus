@@ -21,4 +21,4 @@ class PageModel {
   final int index;
 }
 
-enum NavigationBarEvent { HOME, SEARCH, SETTINGS }
+enum NavigationBarEvent { HOME, PORTFOLIO, ASSETS, TOOLS, PROFILE }

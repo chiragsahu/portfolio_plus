@@ -65,7 +65,7 @@ class _PortfolioListViewState extends ConsumerState<PortfolioListView> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AddPortfolioView(),
+              builder: (context) => const ProviderScope(child: AddPortfolioView()),
             ),
           );
         },
@@ -119,7 +119,7 @@ class _PortfolioListViewState extends ConsumerState<PortfolioListView> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const AddPortfolioView(),
+                                  builder: (context) => const ProviderScope(child: AddPortfolioView()),
                                 ),
                               );
                             },

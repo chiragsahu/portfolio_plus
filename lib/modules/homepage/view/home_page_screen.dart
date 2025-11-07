@@ -36,7 +36,7 @@ class HomePageScreen extends ConsumerWidget {
   final List<Widget> pages = const [
     DashboardScreen(),
     PortfolioScreen(),
-    ProfileScreen(),
+    PortfolioScreen(), // Assets screen - using PortfolioScreen for now
     ToolsScreen(),
     ProfileScreen(),
   ];
@@ -58,7 +58,7 @@ class HomePageScreen extends ConsumerWidget {
           backgroundColor: Colors.blueGrey[900],
           selectedItemColor: Colors.white,
           unselectedItemColor: Colors.grey,
-          showSelectedLabels: false,
+          showSelectedLabels: true,
           showUnselectedLabels: true,
         ),
         body: Center(child: pages[bottomNavProvider.index]),
