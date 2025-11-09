@@ -7,6 +7,7 @@ import 'package:portfolio_plus/modules/tools/view/comparison/widgets/comparison_
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/ts.dart';
 import 'package:portfolio_plus/utils/extensions/number_extension.dart';
+import 'package:portfolio_plus/utils/custom_widgets/input_text_field.dart';
 
 class MutualFundComparisonScreen extends ConsumerStatefulWidget {
   const MutualFundComparisonScreen({super.key});
@@ -194,31 +195,21 @@ class _MutualFundComparisonScreenState
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: TextField(
+      child: CustomInputField(
         controller: searchController,
-        decoration: InputDecoration(
-          hintText: 'Search mutual funds...',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    searchController.clear();
-                    _searchFunds('');
-                  },
-                )
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.greyBorder),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.blueGrey),
-          ),
-          filled: true,
-          fillColor: Colors.white,
-        ),
+        hint: 'Search mutual funds...',
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: searchController.text.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  searchController.clear();
+                  _searchFunds('');
+                },
+              )
+            : null,
+        borderRadius: 12,
+        fillColor: Colors.white,
         onChanged: _searchFunds,
       ),
     );

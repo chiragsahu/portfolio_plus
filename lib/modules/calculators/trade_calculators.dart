@@ -6,6 +6,7 @@ import 'package:portfolio_plus/modules/calculators/loan_calculator_screen.dart';
 import 'package:portfolio_plus/modules/calculators/sip_calculator_screen.dart';
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/ts.dart';
+import 'package:portfolio_plus/utils/custom_widgets/input_text_field.dart';
 
 class Trade {
   final String type; // Buy or Sell
@@ -272,15 +273,19 @@ class _TradeCalculatorScreenState extends State<TradeCalculatorScreen> {
                       items: ['Buy', 'Sell'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                       onChanged: (val) => setState(() => _selectedType = val!),
                     ),
-                    TextField(
+                    CustomInputField(
+                      label: 'Amount',
                       controller: _amountController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Amount'),
+                      hint: 'Amount',
+                      borderRadius: 12,
                     ),
-                    TextField(
+                    CustomInputField(
+                      label: 'Quantity',
                       controller: _quantityController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Quantity'),
+                      hint: 'Quantity',
+                      borderRadius: 12,
                     ),
                     Row(
                       children: [
@@ -288,10 +293,12 @@ class _TradeCalculatorScreenState extends State<TradeCalculatorScreen> {
                         TextButton(onPressed: _pickDate, child: const Text('Pick Date')),
                       ],
                     ),
-                    TextField(
+                    CustomInputField(
+                      label: 'Current Market Price',
                       controller: _marketPriceController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Current Market Price'),
+                      hint: 'Current Market Price',
+                      borderRadius: 12,
                       onChanged: (_) => setState(_calculateSummary),
                     ),
                     ElevatedButton(onPressed: _addTrade, child: const Text('Add Trade')),

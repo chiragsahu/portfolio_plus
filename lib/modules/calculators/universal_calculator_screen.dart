@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/ts.dart';
+import 'package:portfolio_plus/utils/custom_widgets/input_text_field.dart';
 
 enum CalculatorType { sip, nps, rd, epf }
 
@@ -417,43 +418,23 @@ class _UniversalCalculatorScreenState extends State<UniversalCalculatorScreen> {
     String hint,
     TextInputType keyboardType,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Ts.regular14(AppColors.black)),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          decoration: InputDecoration(
-            hintText: hint,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: AppColors.primaryColor),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter a value';
-            }
-            if (double.tryParse(value) == null) {
-              return 'Please enter a valid number';
-            }
-            if (double.tryParse(value)! < 0) {
-              return 'Value must be positive';
-            }
-            return null;
-          },
-        ),
-      ],
+    return CustomInputField(
+      label: label,
+      controller: controller,
+      hint: hint,
+      keyboardType: keyboardType,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter a value';
+        }
+        if (double.tryParse(value) == null) {
+          return 'Please enter a valid number';
+        }
+        if (double.tryParse(value)! < 0) {
+          return 'Value must be positive';
+        }
+        return null;
+      },
     );
   }
 

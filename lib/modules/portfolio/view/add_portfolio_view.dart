@@ -5,6 +5,7 @@ import 'package:portfolio_plus/modules/portfolio/provider/portfolio_provider.dar
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/enums/investment_type.dart';
 import 'package:portfolio_plus/utils/ts.dart';
+import 'package:portfolio_plus/utils/custom_widgets/input_text_field.dart';
 
 class AddPortfolioView extends ConsumerStatefulWidget {
   const AddPortfolioView({super.key});
@@ -43,21 +44,12 @@ class _AddPortfolioViewState extends ConsumerState<AddPortfolioView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Portfolio name
-              Text(
-                'Portfolio Name',
-                style: Ts.semiBold16(AppColors.black),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
+              CustomInputField(
+                label: 'Portfolio Name',
                 controller: _nameController,
-                decoration: InputDecoration(
-                  hintText: 'Enter portfolio name',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
+                hint: 'Enter portfolio name',
+                borderRadius: 12,
+                fillColor: Colors.grey[100],
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a portfolio name';
@@ -107,22 +99,13 @@ class _AddPortfolioViewState extends ConsumerState<AddPortfolioView> {
               const SizedBox(height: 20),
 
               // Description
-              Text(
-                'Description (Optional)',
-                style: Ts.semiBold16(AppColors.black),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
+              CustomInputField(
+                label: 'Description (Optional)',
                 controller: _descriptionController,
+                hint: 'Enter portfolio description',
                 maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'Enter portfolio description',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
+                borderRadius: 12,
+                fillColor: Colors.grey[100],
               ),
               const SizedBox(height: 20),
 
@@ -188,12 +171,9 @@ class _AddPortfolioViewState extends ConsumerState<AddPortfolioView> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Add Tag'),
-        content: TextField(
+        content: CustomInputField(
           controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'Enter tag name',
-          ),
-          autofocus: true,
+          hint: 'Enter tag name',
         ),
         actions: [
           TextButton(

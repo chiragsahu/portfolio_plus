@@ -5,6 +5,7 @@ import 'package:portfolio_plus/modules/portfolio/provider/transaction_provider.d
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/enums/transaction.dart';
 import 'package:portfolio_plus/utils/ts.dart';
+import 'package:portfolio_plus/utils/custom_widgets/input_text_field.dart';
 
 class AddTransactionView extends ConsumerStatefulWidget {
   final int portfolioId;
@@ -89,22 +90,13 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
               const SizedBox(height: 20),
 
               // Quantity
-              Text(
-                'Quantity',
-                style: Ts.semiBold16(AppColors.black),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
+              CustomInputField(
+                label: 'Quantity',
                 controller: _quantityController,
+                hint: 'Enter quantity',
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'Enter quantity',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
+                fillColor: Colors.grey[100],
+                borderRadius: 12,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a quantity';
@@ -112,7 +104,7 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
                   if (double.tryParse(value) == null) {
                     return 'Please enter a valid number';
                   }
-                  if (double.parse(value) <= 0) {
+                  if ((double.tryParse(value) ?? 0) <= 0) {
                     return 'Quantity must be greater than 0';
                   }
                   return null;
@@ -122,22 +114,16 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
               const SizedBox(height: 20),
 
               // Price
-              Text(
-                'Price',
-                style: Ts.semiBold16(AppColors.black),
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
+              CustomInputField(
+                label: 'Price',
                 controller: _priceController,
+                hint: 'Enter price',
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'Enter price',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  prefixText: '₹',
+                fillColor: Colors.grey[100],
+                borderRadius: 12,
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  child: Text('₹', style: Ts.semiBold16(AppColors.black)),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -146,7 +132,7 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
                   if (double.tryParse(value) == null) {
                     return 'Please enter a valid number';
                   }
-                  if (double.parse(value) <= 0) {
+                  if ((double.tryParse(value) ?? 0) <= 0) {
                     return 'Price must be greater than 0';
                   }
                   return null;
@@ -221,17 +207,13 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
                 style: Ts.semiBold16(AppColors.black),
               ),
               const SizedBox(height: 8),
-              TextFormField(
+              CustomInputField(
+                label: 'Notes (Optional)',
                 controller: _notesController,
+                hint: 'Enter transaction notes',
                 maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'Enter transaction notes',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
+                fillColor: Colors.grey[100],
+                borderRadius: 12,
               ),
               const SizedBox(height: 32),
 

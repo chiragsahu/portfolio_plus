@@ -9,6 +9,7 @@ import 'package:portfolio_plus/modules/portfolio/view/portfolio_comparison_view.
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/enums/investment_type.dart';
 import 'package:portfolio_plus/utils/ts.dart';
+import 'package:portfolio_plus/utils/custom_widgets/input_text_field.dart';
 
 class PortfolioListView extends ConsumerStatefulWidget {
   const PortfolioListView({super.key});
@@ -90,17 +91,12 @@ class _PortfolioListViewState extends ConsumerState<PortfolioListView> {
             // Search bar
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: TextField(
+              child: CustomInputField(
                 controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search portfolios...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                ),
+                hint: 'Search portfolios...',
+                prefixIcon: const Icon(Icons.search),
+                borderRadius: 12,
+                fillColor: Colors.grey[100],
               ),
             ),
             
