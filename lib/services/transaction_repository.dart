@@ -24,7 +24,9 @@ class TransactionRepository {
   }
 
   // Get transactions by portfolio ID
-  Future<List<TransactionModel>> getTransactionsByPortfolioId(int portfolioId) async {
+  Future<List<TransactionModel>> getTransactionsByPortfolioId(
+    int portfolioId,
+  ) async {
     final db = await _databaseService.database;
     final List<Map<String, dynamic>> maps = await db.query(
       'transactions',
@@ -45,6 +47,39 @@ class TransactionRepository {
       where: 'assetId = ?',
       whereArgs: [assetId],
       orderBy: 'date DESC',
+    );
+    return List.generate(maps.length, (i) {
+      return TransactionModel.fromMap(maps[i]);
+    });
+  }
+
+  // Get transactions by account ID
+  Future<List<TransactionModel>> getTransactionsByAccountId(
+    int accountId,
+  ) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'transactions',
+      where: 'accountId = ?',
+      whereArgs: [accountId],
+      orderBy: 'date DESC',
+    );
+    return List.generate(maps.length, (i) {
+      return TransactionModel.fromMap(maps[i]);
+    });
+  }
+
+  // Get transactions by account and asset ID
+  Future<List<TransactionModel>> getTransactionsByAccountAndAssetId(
+    int accountId,
+    int assetId,
+  ) async {
+    final db = await _databaseService.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'transactions',
+      where: 'accountId = ? AND assetId = ?',
+      whereArgs: [accountId, assetId],
+      orderBy: 'date ASC', // FIFO order for position calculations
     );
     return List.generate(maps.length, (i) {
       return TransactionModel.fromMap(maps[i]);
@@ -79,11 +114,7 @@ class TransactionRepository {
   // Delete transaction
   Future<int> deleteTransaction(int id) async {
     final db = await _databaseService.database;
-    return await db.delete(
-      'transactions',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
   }
 
   // Get transactions by type
@@ -130,7 +161,7 @@ class TransactionRepository {
       whereArgs: [
         portfolioId,
         startDate.toIso8601String(),
-        endDate.toIso8601String()
+        endDate.toIso8601String(),
       ],
       orderBy: 'date DESC',
     );
@@ -142,47 +173,58 @@ class TransactionRepository {
   // Get transaction statistics for a portfolio
   Future<Map<String, dynamic>> getTransactionStatistics(int portfolioId) async {
     final db = await _databaseService.database;
-    
+
     // Total transactions count
-    final transactionCount = Sqflite.firstIntValue(
-      await db.rawQuery(
-        'SELECT COUNT(*) FROM transactions WHERE portfolioId = ?',
-        [portfolioId]
-      )
-    ) ?? 0;
-    
+    final transactionCount =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT COUNT(*) FROM transactions WHERE portfolioId = ?',
+            [portfolioId],
+          ),
+        ) ??
+        0;
+
     // Total invested amount (sum of buy transactions)
-    final totalInvested = Sqflite.firstIntValue(
-      await db.rawQuery(
-        'SELECT SUM(amount) FROM transactions WHERE portfolioId = ? AND type = ?',
-        [portfolioId, 'buy']
-      )
-    ) ?? 0;
-    
+    final totalInvested =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT SUM(amount) FROM transactions WHERE portfolioId = ? AND type = ?',
+            [portfolioId, 'buy'],
+          ),
+        ) ??
+        0;
+
     // Total sold amount (sum of sell transactions)
-    final totalSold = Sqflite.firstIntValue(
-      await db.rawQuery(
-        'SELECT SUM(amount) FROM transactions WHERE portfolioId = ? AND type = ?',
-        [portfolioId, 'sell']
-      )
-    ) ?? 0;
-    
+    final totalSold =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT SUM(amount) FROM transactions WHERE portfolioId = ? AND type = ?',
+            [portfolioId, 'sell'],
+          ),
+        ) ??
+        0;
+
     // Total dividends received
-    final totalDividends = Sqflite.firstIntValue(
-      await db.rawQuery(
-        'SELECT SUM(amount) FROM transactions WHERE portfolioId = ? AND type = ?',
-        [portfolioId, 'dividend']
-      )
-    ) ?? 0;
-    
+    final totalDividends =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            'SELECT SUM(amount) FROM transactions WHERE portfolioId = ? AND type = ?',
+            [portfolioId, 'dividend'],
+          ),
+        ) ??
+        0;
+
     // Transactions by type
-    final List<Map<String, dynamic>> typeMaps = await db.rawQuery('''
+    final List<Map<String, dynamic>> typeMaps = await db.rawQuery(
+      '''
       SELECT type, COUNT(*) as count, SUM(amount) as totalAmount
       FROM transactions 
       WHERE portfolioId = ?
       GROUP BY type
-    ''', [portfolioId]);
-    
+    ''',
+      [portfolioId],
+    );
+
     Map<String, Map<String, dynamic>> transactionsByType = {};
     for (var map in typeMaps) {
       transactionsByType[map['type']] = {
@@ -190,7 +232,7 @@ class TransactionRepository {
         'totalAmount': map['totalAmount'],
       };
     }
-    
+
     return {
       'totalTransactions': transactionCount,
       'totalInvested': totalInvested,

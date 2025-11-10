@@ -59,15 +59,22 @@ class DatabaseService {
       CREATE TABLE transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         portfolioId INTEGER NOT NULL,
+        accountId INTEGER,
         assetId INTEGER,
         type TEXT NOT NULL,
         quantity REAL NOT NULL,
         price REAL NOT NULL,
         amount REAL NOT NULL,
+        fee REAL,
+        feeCurrency TEXT,
+        quoteCurrency TEXT,
+        tradeId TEXT,
+        realizedPnLPerTx REAL,
         date TEXT NOT NULL,
         notes TEXT,
         createdAt TEXT NOT NULL,
         FOREIGN KEY (portfolioId) REFERENCES portfolios (id) ON DELETE CASCADE,
+        FOREIGN KEY (accountId) REFERENCES accounts (id) ON DELETE SET NULL,
         FOREIGN KEY (assetId) REFERENCES assets (id) ON DELETE SET NULL
       )
     ''');
@@ -94,6 +101,7 @@ class DatabaseService {
   
     // Create indexes for better performance
     await db.execute('CREATE INDEX idx_transactions_portfolioId ON transactions(portfolioId)');
+    await db.execute('CREATE INDEX idx_transactions_accountId ON transactions(accountId)');
     await db.execute('CREATE INDEX idx_transactions_assetId ON transactions(assetId)');
     await db.execute('CREATE INDEX idx_transactions_date ON transactions(date)');
     await db.execute('CREATE INDEX idx_assets_symbol ON assets(symbol)');
@@ -230,6 +238,15 @@ class DatabaseService {
       ''');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_accounts_providerId ON accounts(providerId)');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_accounts_parentAccountId ON accounts(parentAccountId)');
+
+      // Extend transactions table with new fields
+      await db.execute('ALTER TABLE transactions ADD COLUMN accountId INTEGER REFERENCES accounts(id)');
+      await db.execute('ALTER TABLE transactions ADD COLUMN fee REAL');
+      await db.execute('ALTER TABLE transactions ADD COLUMN feeCurrency TEXT');
+      await db.execute('ALTER TABLE transactions ADD COLUMN quoteCurrency TEXT');
+      await db.execute('ALTER TABLE transactions ADD COLUMN tradeId TEXT');
+      await db.execute('ALTER TABLE transactions ADD COLUMN realizedPnLPerTx REAL');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_transactions_accountId ON transactions(accountId)');
 
       // Scopes (Lenses)
       await db.execute('''

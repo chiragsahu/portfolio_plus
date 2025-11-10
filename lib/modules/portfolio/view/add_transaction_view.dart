@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:portfolio_plus/models/account.dart';
 import 'package:portfolio_plus/models/transaction.dart';
+import 'package:portfolio_plus/modules/portfolio/provider/account_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/transaction_provider.dart';
+import 'package:portfolio_plus/services/account_repository.dart';
+import 'package:portfolio_plus/services/provider_repository.dart';
 import 'package:portfolio_plus/utils/colors.dart';
+import 'package:portfolio_plus/utils/enums/currency.dart';
 import 'package:portfolio_plus/utils/enums/transaction.dart';
 import 'package:portfolio_plus/utils/ts.dart';
+import 'package:portfolio_plus/utils/custom_widgets/custom_dropdown.dart';
 import 'package:portfolio_plus/utils/custom_widgets/input_text_field.dart';
 
 class AddTransactionView extends ConsumerStatefulWidget {
@@ -23,20 +29,30 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
   final _formKey = GlobalKey<FormState>();
   final _quantityController = TextEditingController();
   final _priceController = TextEditingController();
+  final _feeController = TextEditingController();
+  final _tradeIdController = TextEditingController();
   final _notesController = TextEditingController();
   TransactionType _selectedType = TransactionType.buy;
   DateTime _selectedDate = DateTime.now();
+  AccountModel? _selectedAccountModel;
+  int? _selectedAccountId;
+  Currency _selectedFeeCurrency = Currency.inr;
+  Currency _selectedQuoteCurrency = Currency.inr;
 
   @override
   void dispose() {
     _quantityController.dispose();
     _priceController.dispose();
+    _feeController.dispose();
+    _tradeIdController.dispose();
     _notesController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final accountsAsync = ref.watch(accountsProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Transaction'),
@@ -50,6 +66,36 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Account selection
+              Text(
+                'Account (Optional)',
+                style: Ts.semiBold16(AppColors.black),
+              ),
+              const SizedBox(height: 8),
+              accountsAsync.when(
+                data: (accounts) => CustomDropdown<AccountModel?>(
+                  selectedItem: _selectedAccountModel,
+                  items: [
+                    null,
+                    ...accounts,
+                  ],
+                  itemToString: (account) => account == null
+                      ? 'No account selected'
+                      : '${account.name} (${account.baseCurrency?.displayName ?? 'No currency'})',
+                  onChanged: (account) {
+                    setState(() {
+                      _selectedAccountModel = account;
+                      _selectedAccountId = account?.id;
+                    });
+                  },
+                  hintText: 'Select account',
+                  borderRadius: 12,
+                ),
+                loading: () => const CircularProgressIndicator(),
+                error: (error, stack) => Text('Error loading accounts: $error'),
+              ),
+              const SizedBox(height: 20),
+
               // Transaction type
               Text(
                 'Transaction Type',
@@ -138,6 +184,72 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
                   return null;
                 },
                 onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 20),
+
+              // Fee
+              CustomInputField(
+                label: 'Fee (Optional)',
+                controller: _feeController,
+                hint: 'Enter transaction fee',
+                keyboardType: TextInputType.number,
+                fillColor: Colors.grey[100],
+                borderRadius: 12,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 20),
+
+              // Fee Currency
+              Text(
+                'Fee Currency',
+                style: Ts.semiBold16(AppColors.black),
+              ),
+              const SizedBox(height: 8),
+              CustomDropdown<Currency>(
+                selectedItem: _selectedFeeCurrency,
+                items: Currency.values,
+                itemToString: (currency) => currency.displayName,
+                onChanged: (currency) {
+                  if (currency != null) {
+                    setState(() {
+                      _selectedFeeCurrency = currency;
+                    });
+                  }
+                },
+                hintText: 'Select fee currency',
+                borderRadius: 12,
+              ),
+              const SizedBox(height: 20),
+
+              // Quote Currency
+              Text(
+                'Quote Currency',
+                style: Ts.semiBold16(AppColors.black),
+              ),
+              const SizedBox(height: 8),
+              CustomDropdown<Currency>(
+                selectedItem: _selectedQuoteCurrency,
+                items: Currency.values,
+                itemToString: (currency) => currency.displayName,
+                onChanged: (currency) {
+                  if (currency != null) {
+                    setState(() {
+                      _selectedQuoteCurrency = currency;
+                    });
+                  }
+                },
+                hintText: 'Select quote currency',
+                borderRadius: 12,
+              ),
+              const SizedBox(height: 20),
+
+              // Trade ID
+              CustomInputField(
+                label: 'Trade ID (Optional)',
+                controller: _tradeIdController,
+                hint: 'Enter trade ID',
+                fillColor: Colors.grey[100],
+                borderRadius: 12,
               ),
               const SizedBox(height: 20),
 
@@ -271,10 +383,19 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
     if (_formKey.currentState!.validate()) {
       final transaction = TransactionModel(
         portfolioId: widget.portfolioId,
+        accountId: _selectedAccountId,
         type: _selectedType,
         quantity: double.parse(_quantityController.text),
         price: double.parse(_priceController.text),
         amount: _calculateAmount(),
+        fee: _feeController.text.trim().isEmpty
+            ? null
+            : double.tryParse(_feeController.text),
+        feeCurrency: _selectedFeeCurrency,
+        quoteCurrency: _selectedQuoteCurrency,
+        tradeId: _tradeIdController.text.trim().isEmpty
+            ? null
+            : _tradeIdController.text,
         date: _selectedDate,
         notes: _notesController.text.trim().isEmpty
             ? null

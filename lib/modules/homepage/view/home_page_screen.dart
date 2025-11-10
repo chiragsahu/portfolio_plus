@@ -5,6 +5,7 @@ import '../../dashboard/view/dashboard_screen.dart';
 import '../../portfolio/provider/portfolio_provider.dart';
 import '../../portfolio/view/portfolio_view.dart';
 import '../../profile/view/profile_screen.dart';
+import '../../scopes/view/scopes_list_view.dart';
 import '../../tools/view/tools_screen.dart';
 import '../provider/bottomnav_ctrl.dart';
 
@@ -14,10 +15,7 @@ class HomePageScreen extends ConsumerWidget {
   final bottomNavigationBarItems = const [
     BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Dashboard'),
     BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: 'Portfolio'),
-    // BottomNavigationBarItem(
-    //   icon: Icon(Icons.account_balance_wallet),
-    //   label: 'Assets',
-    // ),
+    BottomNavigationBarItem(icon: Icon(Icons.filter_list), label: 'Scopes'),
     BottomNavigationBarItem(icon: Icon(Icons.build), label: 'Tools'),
     BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
   ];
@@ -25,6 +23,7 @@ class HomePageScreen extends ConsumerWidget {
   final List<Widget> pages = const [
     DashboardScreen(),
     PortfolioScreen(),
+    ScopesListView(),
     ToolsScreen(),
     ProfileScreen(),
   ];
