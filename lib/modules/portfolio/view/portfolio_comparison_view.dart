@@ -6,6 +6,9 @@ import 'package:portfolio_plus/modules/portfolio/provider/portfolio_calculations
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/enums/investment_type.dart';
 import 'package:portfolio_plus/utils/ts.dart';
+import 'package:portfolio_plus/modules/settings/provider/settings_provider.dart';
+import 'package:portfolio_plus/services/currency_conversion_service.dart';
+import 'package:portfolio_plus/utils/enums/currency.dart';
 
 class PortfolioComparisonView extends ConsumerStatefulWidget {
   const PortfolioComparisonView({super.key});
@@ -234,7 +237,6 @@ class _PortfolioComparisonViewState extends ConsumerState<PortfolioComparisonVie
         // Total Value
         _buildMetricCard(
           'Total Value',
-          '₹',
           (summary) => summary['totalValue'] as double,
           Colors.blue,
         ),
@@ -242,7 +244,6 @@ class _PortfolioComparisonViewState extends ConsumerState<PortfolioComparisonVie
         // Invested Amount
         _buildMetricCard(
           'Invested Amount',
-          '₹',
           (summary) => summary['investedAmount'] as double,
           Colors.green,
         ),
@@ -250,7 +251,6 @@ class _PortfolioComparisonViewState extends ConsumerState<PortfolioComparisonVie
         // Total P&L
         _buildMetricCard(
           'Total P&L',
-          '₹',
           (summary) => summary['totalPnL'] as double,
           Colors.orange,
           showPercentage: true,
@@ -259,7 +259,6 @@ class _PortfolioComparisonViewState extends ConsumerState<PortfolioComparisonVie
         // P&L Percentage
         _buildMetricCard(
           'Return %',
-          '',
           (summary) => summary['totalPnLPercentage'] as double,
           Colors.purple,
           isPercentage: true,
@@ -268,9 +267,9 @@ class _PortfolioComparisonViewState extends ConsumerState<PortfolioComparisonVie
         // Transaction Count
         _buildMetricCard(
           'Transactions',
-          '',
           (summary) => (summary['transactionCount'] as int).toDouble(),
           Colors.teal,
+          isCurrency: false,
         ),
       ],
     );
@@ -278,17 +277,21 @@ class _PortfolioComparisonViewState extends ConsumerState<PortfolioComparisonVie
 
   Widget _buildMetricCard(
     String title,
-    String prefix,
     double Function(Map<String, dynamic>) getValue,
     Color color, {
     bool isPercentage = false,
     bool showPercentage = false,
+    bool isCurrency = true,
   }) {
     return Consumer(
       builder: (context, ref, child) {
         final summaries = _selectedPortfolios.map((portfolio) {
           return ref.watch(portfolioSummaryProvider(portfolio.id!));
         }).toList();
+
+        final settingsAsync = ref.watch(settingsProvider);
+        final base = settingsAsync.value?.baseCurrency ?? Currency.inr;
+        final converter = CurrencyConversionService();
 
         return Card(
           elevation: 2,
@@ -310,10 +313,12 @@ class _PortfolioComparisonViewState extends ConsumerState<PortfolioComparisonVie
                       child: summaryAsync.when(
                         data: (summary) {
                           final value = getValue(summary);
-                          final displayValue = isPercentage 
+                          final displayValue = isPercentage
                               ? '${value.toStringAsFixed(2)}%'
-                              : '$prefix${value.toStringAsFixed(2)}';
-                          
+                              : (isCurrency
+                                  ? converter.format(base, value)
+                                  : value.toStringAsFixed(0));
+
                           return Column(
                             children: [
                               Text(

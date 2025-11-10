@@ -109,7 +109,7 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
                   }
                   return null;
                 },
-                onChanged: (_) => _calculateAmount(),
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 20),
 
@@ -121,7 +121,7 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
                 keyboardType: TextInputType.number,
                 fillColor: Colors.grey[100],
                 borderRadius: 12,
-                prefixIcon: Padding(
+                suffixIcon: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                   child: Text('₹', style: Ts.semiBold16(AppColors.black)),
                 ),
@@ -137,7 +137,7 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
                   }
                   return null;
                 },
-                onChanged: (_) => _calculateAmount(),
+                onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 20),
 

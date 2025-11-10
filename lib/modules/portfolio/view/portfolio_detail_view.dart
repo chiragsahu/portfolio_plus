@@ -4,6 +4,7 @@ import 'package:portfolio_plus/models/transaction.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/portfolio_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/transaction_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/view/add_transaction_view.dart';
+import 'package:portfolio_plus/modules/portfolio/view/edit_transaction_view.dart';
 import 'package:portfolio_plus/modules/portfolio/view/asset_allocation_view.dart';
 import 'package:portfolio_plus/modules/portfolio/view/portfolio_analytics_view.dart';
 import 'package:portfolio_plus/modules/portfolio/view/portfolio_export_view.dart';
@@ -11,6 +12,9 @@ import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/enums/transaction.dart';
 import 'package:portfolio_plus/utils/ts.dart';
 import 'package:intl/intl.dart';
+import 'package:portfolio_plus/modules/settings/provider/settings_provider.dart';
+import 'package:portfolio_plus/services/currency_conversion_service.dart';
+import 'package:portfolio_plus/utils/enums/currency.dart';
 
 class PortfolioDetailView extends ConsumerStatefulWidget {
   final int portfolioId;
@@ -26,6 +30,8 @@ class PortfolioDetailView extends ConsumerStatefulWidget {
 
 class _PortfolioDetailViewState extends ConsumerState<PortfolioDetailView> {
   String _selectedFilter = 'all';
+  bool _selectionMode = false;
+  final Set<int> _selectedIds = {};
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +101,18 @@ class _PortfolioDetailViewState extends ConsumerState<PortfolioDetailView> {
                 ),
               );
             },
+          ),
+          IconButton(
+            icon: Icon(_selectionMode ? Icons.close : Icons.select_all),
+            onPressed: () {
+              setState(() {
+                _selectionMode = !_selectionMode;
+                if (!_selectionMode) {
+                  _selectedIds.clear();
+                }
+              });
+            },
+            tooltip: _selectionMode ? 'Cancel selection' : 'Multi-select',
           ),
         ],
       ),
@@ -230,8 +248,32 @@ class _PortfolioDetailViewState extends ConsumerState<PortfolioDetailView> {
                         final transaction = transactions[index];
                         return TransactionCard(
                           transaction: transaction,
+                          selectionMode: _selectionMode,
+                          selected: transaction.id != null && _selectedIds.contains(transaction.id),
+                          onSelectedChanged: (checked) {
+                            final id = transaction.id;
+                            if (id == null) return;
+                            setState(() {
+                              if (checked == true) {
+                                _selectedIds.add(id);
+                              } else {
+                                _selectedIds.remove(id);
+                              }
+                            });
+                          },
                           onTap: () {
-                            // TODO: Show transaction details
+                            final id = transaction.id;
+                            if (_selectionMode && id != null) {
+                              setState(() {
+                                if (_selectedIds.contains(id)) {
+                                  _selectedIds.remove(id);
+                                } else {
+                                  _selectedIds.add(id);
+                                }
+                              });
+                            } else {
+                              // TODO: Show transaction details
+                            }
                           },
                         );
                       },
@@ -329,11 +371,17 @@ class _PortfolioDetailViewState extends ConsumerState<PortfolioDetailView> {
 class TransactionCard extends StatelessWidget {
   final TransactionModel transaction;
   final VoidCallback onTap;
+  final bool selectionMode;
+  final bool selected;
+  final ValueChanged<bool?>? onSelectedChanged;
 
   const TransactionCard({
     super.key,
     required this.transaction,
     required this.onTap,
+    this.selectionMode = false,
+    this.selected = false,
+    this.onSelectedChanged,
   });
 
   @override
@@ -382,9 +430,16 @@ class TransactionCard extends StatelessWidget {
                       style: Ts.regular14(AppColors.grey),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      'Price: ₹${transaction.price.toStringAsFixed(2)}',
-                      style: Ts.regular14(AppColors.grey),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final settings = ref.watch(settingsProvider);
+                        final base = settings.value?.baseCurrency ?? Currency.inr;
+                        final converter = CurrencyConversionService();
+                        return Text(
+                          'Price: ${converter.format(base, transaction.price)}',
+                          style: Ts.regular14(AppColors.grey),
+                        );
+                      },
                     ),
                     if (transaction.notes != null && transaction.notes!.isNotEmpty)
                       Padding(
@@ -404,11 +459,18 @@ class TransactionCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    '₹${transaction.amount.toStringAsFixed(2)}',
-                    style: Ts.semiBold16(
-                      transaction.type.isPositive ? Colors.green : Colors.red,
-                    ),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final settings = ref.watch(settingsProvider);
+                      final base = settings.value?.baseCurrency ?? Currency.inr;
+                      final converter = CurrencyConversionService();
+                      return Text(
+                        converter.format(base, transaction.amount),
+                        style: Ts.semiBold16(
+                          transaction.type.isPositive ? Colors.green : Colors.red,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -417,6 +479,84 @@ class TransactionCard extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(width: 8),
+              selectionMode
+                  ? Checkbox(
+                      value: selected,
+                      onChanged: onSelectedChanged,
+                    )
+                  : Consumer(
+                      builder: (context, ref, _) {
+                        return PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert),
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Edit'),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete'),
+                            ),
+                          ],
+                          onSelected: (value) async {
+                            if (value == 'edit') {
+                              final id = transaction.id;
+                              if (id != null) {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EditTransactionView(
+                                      portfolioId: transaction.portfolioId,
+                                      transactionId: id,
+                                    ),
+                                  ),
+                                );
+                              }
+                            } else if (value == 'delete') {
+                              final id = transaction.id;
+                              if (id != null) {
+                                final confirmed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Delete transaction'),
+                                    content: const Text('Are you sure you want to delete this transaction? This action cannot be undone.'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, true),
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirmed == true) {
+                                  try {
+                                    await ref.read(transactionListProvider(transaction.portfolioId).notifier).deleteTransaction(id);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Transaction deleted'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error deleting transaction: $e'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              }
+                            }
+                          },
+                        );
+                      },
+                    ),
             ],
           ),
         ),

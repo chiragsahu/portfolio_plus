@@ -247,3 +247,88 @@ lib/
 4. AI-powered insights
 5. Social features
 6. Tax reporting
+
+## Architecture Addendum: Multi-account, Exchanges, Sub-accounts, and Saved Views ("Lens")
+
+To support multiple providers (e.g., Zerodha, Groww) and crypto exchanges (e.g., Bybit with sub-accounts), adopt an account-first domain model with a flexible saved-view layer:
+
+- Domain Concepts
+  - Provider: A platform or broker (Zerodha, Groww, Bybit, Binance).
+  - Account: A user account at a provider. Supports self-referencing parentId to model sub-accounts (e.g., Bybit Main, Bybit Trading Subaccount-1).
+  - Asset: A security or instrument (stock, coin, mutual fund, bond, commodity).
+  - Scope (internal): A filter that selects a set of Providers/Accounts/Sub-accounts/Assets/Tags and optional date range.
+  - Lens (user-facing): A saved view mapped to an internal Scope. Users select a Lens to slice and aggregate analytics.
+
+- Hierarchy
+  Provider → Account → Sub-account → Asset → Transactions
+  Aggregations flow upward: per Asset within Account, then to Account, Provider, and finally to Lens.
+
+- Saved Views ("Lens")
+  - Users can create multiple Lenses that capture selections like:
+    - All Zerodha stocks only
+    - All Groww stocks only
+    - All Bybit sub-accounts individually or combined
+    - Cross-provider slices (e.g., all Mutual Funds across Zerodha + Groww)
+  - Each Lens can optionally override base currency for display.
+
+- Examples
+  - Stocks:
+    - Zerodha Lens: shows realized/unrealized PnL for stocks held via Zerodha only.
+    - Groww Lens: isolated view for Groww holdings.
+  - Crypto:
+    - Bybit Main vs Subaccount-1 vs Subaccount-2 Lenses: view realized/unrealized PnL individually, or one combined Lens including all sub-accounts.
+
+## Multi-currency and FX
+
+- Base Currency Setting
+  - User-selectable base currency (INR or USD) stored in settings.
+  - All monetary analytics are displayed in the chosen base currency.
+
+- FX Storage
+  - app_settings: stores key/value settings such as baseCurrency and manual USD→INR rate.
+  - fx_rates: stores historical and latest FX rates for robust conversions and backtesting.
+
+- Conversion and Formatting
+  - A centralized conversion service formats values using base currency and applies FX conversion when needed.
+  - Implemented initially for UI elements in the portfolio list, detail, and comparison screens using [settings_provider.dart](lib/modules/settings/provider/settings_provider.dart) and [currency_conversion_service.dart](lib/services/currency_conversion_service.dart).
+
+## Database Additions (v2+)
+
+Additive migrations (no destructive changes) to support providers, accounts, saved views (Lenses), and FX:
+
+- providers
+  - id, name, type (broker/exchange), metadata
+- accounts
+  - id, provider_id, name, parent_account_id (nullable) for sub-accounts, metadata
+- scopes
+  - id, name, filters JSON (providers/accounts/assets/tags/date-range), optional base_currency override
+- portfolio_scopes (join if keeping legacy "Portfolio" as a convenience)
+  - portfolio_id, scope_id
+- app_settings
+  - key TEXT PRIMARY KEY, value TEXT
+- fx_rates
+  - id, from_currency, to_currency, rate, as_of_utc, UNIQUE(from_currency, to_currency, as_of_utc)
+
+Note: Existing tables for portfolios, transactions, assets, tags remain. Transactions should be extended (future phase) with account_id, fee, fee_currency, quote_currency, trade_id, and realized_pnl_per_tx to enable precise cost-basis and PnL attribution per Account/Sub-account.
+
+## Analytics Acceptance Criteria
+
+- Overview Tab
+  - Renders with no data without errors.
+  - Single-account case shows invested, value, realized PnL, unrealized PnL, and total return %.
+  - Multi-account aggregation correctly sums values and converts currencies to base.
+- Positions Tab
+  - Group by Provider, Account, Sub-account, and Asset.
+  - Columns: qty, avg cost, price, value, realized PnL, unrealized PnL, fees — all in base currency.
+- PnL Tab
+  - Realized/unrealized breakdown per node; date-range filters work; totals reconcile with Overview.
+- Allocation Tab
+  - Allocation by asset class/provider/account respects Lens filters and base-currency conversion.
+- History Tab
+  - Equity curve and net deposits over time handle FX consistently; backfills use historical fx_rates when present.
+
+## Naming Decision
+
+- User-facing name: Lens (maps to internal Scope)
+  - Short, intuitive, communicates “a way of looking at your data”.
+  - Alternatives considered: Scope, Basket, Deck, View, Hub, Stack. Lens selected for clarity and branding.

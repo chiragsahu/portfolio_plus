@@ -20,8 +20,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PortfolioWidget(),
-          SizedBox(height: 20),
+          // PortfolioWidget(),
+          // SizedBox(height: 20),
           PortfolioSummaryWidget(),
           SizedBox(height: 20),
           PortfolioChartsWidget(),

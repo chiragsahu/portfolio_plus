@@ -23,7 +23,7 @@ class DatabaseService {
     
     return await openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -42,7 +42,7 @@ class DatabaseService {
         tags TEXT
       )
     ''');
-
+  
     // Create assets table
     await db.execute('''
       CREATE TABLE assets (
@@ -53,7 +53,7 @@ class DatabaseService {
         lastUpdated TEXT NOT NULL
       )
     ''');
-
+  
     // Create transactions table
     await db.execute('''
       CREATE TABLE transactions (
@@ -71,7 +71,7 @@ class DatabaseService {
         FOREIGN KEY (assetId) REFERENCES assets (id) ON DELETE SET NULL
       )
     ''');
-
+  
     // Create tags table
     await db.execute('''
       CREATE TABLE tags (
@@ -80,7 +80,7 @@ class DatabaseService {
         type TEXT NOT NULL
       )
     ''');
-
+  
     // Create portfolio_tags junction table
     await db.execute('''
       CREATE TABLE portfolio_tags (
@@ -91,21 +91,168 @@ class DatabaseService {
         FOREIGN KEY (tagId) REFERENCES tags (id) ON DELETE CASCADE
       )
     ''');
-
+  
     // Create indexes for better performance
     await db.execute('CREATE INDEX idx_transactions_portfolioId ON transactions(portfolioId)');
     await db.execute('CREATE INDEX idx_transactions_assetId ON transactions(assetId)');
     await db.execute('CREATE INDEX idx_transactions_date ON transactions(date)');
     await db.execute('CREATE INDEX idx_assets_symbol ON assets(symbol)');
+
+    // App settings KV store for base currency and other app-level flags
+    await db.execute('''
+      CREATE TABLE app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    ''');
+
+    // FX rates table for currency conversion
+    await db.execute('''
+      CREATE TABLE fx_rates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fromCurrency TEXT NOT NULL,
+        toCurrency TEXT NOT NULL,
+        rate REAL NOT NULL,
+        date TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      )
+    ''');
+
+    // Index for efficient lookup of FX pairs by date
+    await db.execute('CREATE INDEX idx_fx_rates_pair_date ON fx_rates(fromCurrency, toCurrency, date)');
+
+    // Providers table (brokers/exchanges)
+    await db.execute('''
+      CREATE TABLE providers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL, -- e.g. broker, exchange, bank
+        metadata TEXT
+      )
+    ''');
+
+    // Accounts table (supports sub-accounts via parentAccountId)
+    await db.execute('''
+      CREATE TABLE accounts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        providerId INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        parentAccountId INTEGER,
+        baseCurrency TEXT,
+        metadata TEXT,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL,
+        FOREIGN KEY (providerId) REFERENCES providers (id) ON DELETE CASCADE,
+        FOREIGN KEY (parentAccountId) REFERENCES accounts (id) ON DELETE SET NULL
+      )
+    ''');
+
+    // Scopes (user-facing "Lenses") table
+    await db.execute('''
+      CREATE TABLE scopes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        filters TEXT NOT NULL, -- JSON blob of providers/accounts/assets/tags/date-range
+        baseCurrency TEXT,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      )
+    ''');
+
+    // Optional join between legacy portfolios and scopes
+    await db.execute('''
+      CREATE TABLE portfolio_scopes (
+        portfolioId INTEGER NOT NULL,
+        scopeId INTEGER NOT NULL,
+        PRIMARY KEY (portfolioId, scopeId),
+        FOREIGN KEY (portfolioId) REFERENCES portfolios (id) ON DELETE CASCADE,
+        FOREIGN KEY (scopeId) REFERENCES scopes (id) ON DELETE CASCADE
+      )
+    ''');
+
+    // Indexes for new entities
+    await db.execute('CREATE UNIQUE INDEX idx_providers_name ON providers(name)');
+    await db.execute('CREATE INDEX idx_accounts_providerId ON accounts(providerId)');
+    await db.execute('CREATE INDEX idx_accounts_parentAccountId ON accounts(parentAccountId)');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     // Handle database schema upgrades here when needed
-    // For now, we'll recreate tables (this will lose data in production)
-    // In a real app, you'd want to migrate data properly
-    if (oldVersion < newVersion) {
-      // Example of how to handle upgrades:
-      // await db.execute('ALTER TABLE portfolios ADD COLUMN newColumn TEXT');
+    // IMPORTANT: Perform additive migrations; do not drop existing data.
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS app_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS fx_rates (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          fromCurrency TEXT NOT NULL,
+          toCurrency TEXT NOT NULL,
+          rate REAL NOT NULL,
+          date TEXT NOT NULL,
+          createdAt TEXT NOT NULL
+        )
+      ''');
+
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_fx_rates_pair_date ON fx_rates(fromCurrency, toCurrency, date)');
+    }
+
+    if (oldVersion < 3) {
+      // Providers
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS providers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL,
+          metadata TEXT
+        )
+      ''');
+      await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_providers_name ON providers(name)');
+
+      // Accounts (with self-referencing parentAccountId)
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS accounts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          providerId INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          parentAccountId INTEGER,
+          baseCurrency TEXT,
+          metadata TEXT,
+          createdAt TEXT NOT NULL,
+          updatedAt TEXT NOT NULL,
+          FOREIGN KEY (providerId) REFERENCES providers (id) ON DELETE CASCADE,
+          FOREIGN KEY (parentAccountId) REFERENCES accounts (id) ON DELETE SET NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_accounts_providerId ON accounts(providerId)');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_accounts_parentAccountId ON accounts(parentAccountId)');
+
+      // Scopes (Lenses)
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS scopes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          filters TEXT NOT NULL,
+          baseCurrency TEXT,
+          createdAt TEXT NOT NULL,
+          updatedAt TEXT NOT NULL
+        )
+      ''');
+
+      // Portfolio-Scopes join
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS portfolio_scopes (
+          portfolioId INTEGER NOT NULL,
+          scopeId INTEGER NOT NULL,
+          PRIMARY KEY (portfolioId, scopeId),
+          FOREIGN KEY (portfolioId) REFERENCES portfolios (id) ON DELETE CASCADE,
+          FOREIGN KEY (scopeId) REFERENCES scopes (id) ON DELETE CASCADE
+        )
+      ''');
     }
   }
 

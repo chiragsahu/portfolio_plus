@@ -35,6 +35,7 @@ class PortfolioCalculationsService {
     int buyCount = 0;
     int sellCount = 0;
     int dividendCount = 0;
+    double realizedTrades = 0.0;
 
     // Group transactions by asset to calculate holdings
     Map<String, List<TransactionModel>> transactionsByAsset = {};
@@ -67,6 +68,10 @@ class PortfolioCalculationsService {
           break;
           
         case TransactionType.sell:
+          // Realized PnL using average cost method
+          final avgUnitCost = averageBuyPrices[assetKey] ?? 0.0;
+          realizedTrades += (transaction.price - avgUnitCost) * transaction.quantity;
+
           totalSold += transaction.amount;
           totalQuantity -= transaction.quantity;
           sellCount++;
@@ -111,6 +116,11 @@ class PortfolioCalculationsService {
     final totalPnLPercentage = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0.0;
     final overallAverageBuyPrice = totalQuantity > 0 ? totalBuyAmount / totalQuantity : 0.0;
 
+    // Realized and Unrealized (with current simplified pricing model)
+    final realizedDividends = totalDividends;
+    final realizedTotal = realizedTrades + realizedDividends;
+    final unrealizedPnL = totalPnL - realizedTotal;
+
     return {
       'totalValue': currentValue,
       'investedAmount': totalInvested,
@@ -125,6 +135,11 @@ class PortfolioCalculationsService {
       'dividendTransactions': dividendCount,
       'holdings': holdings,
       'averageBuyPrices': averageBuyPrices,
+      // New analytics
+      'realizedTrades': realizedTrades,
+      'realizedDividends': realizedDividends,
+      'realizedTotal': realizedTotal,
+      'unrealizedPnL': unrealizedPnL,
     };
   }
 

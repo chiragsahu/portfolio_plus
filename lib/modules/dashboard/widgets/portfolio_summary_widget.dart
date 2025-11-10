@@ -56,7 +56,7 @@ class PortfolioSummaryWidget extends ConsumerWidget {
 
   Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -79,7 +79,7 @@ class PortfolioSummaryWidget extends ConsumerWidget {
 
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
     final portfoliosAsync = ref.watch(portfolioListProvider);
-    
+
     return portfoliosAsync.when(
       data: (portfolios) {
         return Container(
@@ -211,26 +211,22 @@ class PortfolioSummaryWidget extends ConsumerWidget {
               children: [
                 Icon(icon, color: color, size: 20),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: Ts.regular12(color),
-                  ),
-                ),
+                Expanded(child: Text(title, style: Ts.regular12(color))),
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              value,
-              style: Ts.semiBold18(Colors.white),
-            ),
+            Text(value, style: Ts.semiBold18(Colors.white)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPortfolioCards(BuildContext context, WidgetRef ref, List portfolios) {
+  Widget _buildPortfolioCards(
+    BuildContext context,
+    WidgetRef ref,
+    List portfolios,
+  ) {
     return Column(
       children: [
         Row(
@@ -274,9 +270,9 @@ class PortfolioSummaryWidget extends ConsumerWidget {
 
   void _navigateToPortfolioTab(BuildContext context, WidgetRef ref) {
     // Navigate to portfolio tab (index 1)
-    ref.read(bottomNavStateProvider.notifier).updateBottomBar(
-      const PageModel(NavigationBarEvent.PORTFOLIO, 1),
-    );
+    ref
+        .read(bottomNavStateProvider.notifier)
+        .updateBottomBar(const PageModel(NavigationBarEvent.PORTFOLIO, 1));
   }
 
   Widget _buildStatCard(

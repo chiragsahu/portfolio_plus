@@ -6,6 +6,8 @@ import 'package:portfolio_plus/modules/portfolio/provider/portfolio_provider.dar
 import 'package:portfolio_plus/modules/portfolio/view/add_portfolio_view.dart';
 import 'package:portfolio_plus/modules/portfolio/view/portfolio_detail_view.dart';
 import 'package:portfolio_plus/modules/portfolio/view/portfolio_comparison_view.dart';
+import 'package:portfolio_plus/modules/settings/view/settings_screen.dart';
+import 'package:portfolio_plus/modules/settings/provider/settings_provider.dart';
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/enums/investment_type.dart';
 import 'package:portfolio_plus/utils/ts.dart';
@@ -42,6 +44,7 @@ class _PortfolioListViewState extends ConsumerState<PortfolioListView> {
   @override
   Widget build(BuildContext context) {
     final portfoliosAsync = ref.watch(portfolioListProvider);
+    final settingsAsync = ref.watch(settingsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -49,6 +52,50 @@ class _PortfolioListViewState extends ConsumerState<PortfolioListView> {
         backgroundColor: AppColors.blueGrey,
         foregroundColor: Colors.white,
         actions: [
+          // Current currency badge (from Settings)
+          Builder(
+            builder: (context) {
+              return settingsAsync.when(
+                data: (s) => Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.payments, color: Colors.white, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        s.baseCurrency.name.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              );
+            },
+          ),
+          // Settings entrypoint
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+            },
+          ),
+          // Compare portfolios
           IconButton(
             icon: const Icon(Icons.compare_arrows),
             onPressed: () {
@@ -61,17 +108,19 @@ class _PortfolioListViewState extends ConsumerState<PortfolioListView> {
             },
             tooltip: 'Compare Portfolios',
           ),
+          // Add portfolio
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const ProviderScope(child: AddPortfolioView()),
+                  builder: (context) => const AddPortfolioView(),
                 ),
               );
             },
           ),
+          // Debug-only: delete all
           if (kDebugMode)
             IconButton(
               icon: const Icon(Icons.delete),
@@ -82,30 +131,30 @@ class _PortfolioListViewState extends ConsumerState<PortfolioListView> {
             ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await ref.read(portfolioListProvider.notifier).loadPortfolios();
-        },
-        child: Column(
-          children: [
-            // Search bar
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: CustomInputField(
-                controller: _searchController,
-                hint: 'Search portfolios...',
-                prefixIcon: const Icon(Icons.search),
-                borderRadius: 12,
-                fillColor: Colors.grey[100],
-              ),
-            ),
-            
-            // Portfolio list
-            Expanded(
-              child: portfoliosAsync.when(
-                data: (portfolios) {
-                  if (portfolios.isEmpty) {
-                    return Center(
+      body: portfoliosAsync.when(
+        data: (portfolios) {
+          return RefreshIndicator(
+            onRefresh: () async {
+              await ref.read(portfolioListProvider.notifier).loadPortfolios();
+            },
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: CustomInputField(
+                      controller: _searchController,
+                      hint: 'Search portfolios...',
+                      prefixIcon: const Icon(Icons.search),
+                      borderRadius: 12,
+                      fillColor: Colors.grey[100],
+                    ),
+                  ),
+                ),
+                if (portfolios.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -136,66 +185,69 @@ class _PortfolioListViewState extends ConsumerState<PortfolioListView> {
                             ),
                         ],
                       ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: portfolios.length,
-                    itemBuilder: (context, index) {
-                      final portfolio = portfolios[index];
-                      return PortfolioCard(
-                        portfolio: portfolio,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PortfolioDetailView(
-                                portfolioId: portfolio.id!,
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                error: (error, stack) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Error loading portfolios',
-                        style: Ts.regular18(Colors.red[600] ?? Colors.red),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        error.toString(),
-                        style: Ts.regular14(Colors.grey[600] ?? Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          ref.read(portfolioListProvider.notifier).loadPortfolios();
-                        },
-                        child: const Text('Retry'),
-                      ),
-                    ],
+                    ),
+                  )
+                else
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final portfolio = portfolios[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: PortfolioCard(
+                            portfolio: portfolio,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PortfolioDetailView(
+                                    portfolioId: portfolio.id!,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                      childCount: portfolios.length,
+                    ),
                   ),
-                ),
-              ),
+              ],
             ),
-          ],
+          );
+        },
+        loading: () => const Center(
+          child: CircularProgressIndicator(),
+        ),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Error loading portfolios',
+                style: Ts.regular18(Colors.red[600] ?? Colors.red),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error.toString(),
+                style: Ts.regular14(Colors.grey[600] ?? Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(portfolioListProvider.notifier).loadPortfolios();
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
       ),
     );
