@@ -14,7 +14,7 @@ class MutualFundService {
         aum: 28456.78, // in crores
         riskRating: 3.5,
         nav: 892.45,
-        returns: {
+        returns: const {
           '1Y': 12.5,
           '3Y': 14.2,
           '5Y': 16.8,
@@ -36,7 +36,7 @@ class MutualFundService {
         aum: 32145.67,
         riskRating: 3.2,
         nav: 567.89,
-        returns: {
+        returns: const {
           '1Y': 11.8,
           '3Y': 13.5,
           '5Y': 15.2,
@@ -58,7 +58,7 @@ class MutualFundService {
         aum: 12456.32,
         riskRating: 4.2,
         nav: 234.56,
-        returns: {
+        returns: const {
           '1Y': 18.5,
           '3Y': 22.1,
           '5Y': 24.3,
@@ -80,7 +80,7 @@ class MutualFundService {
         aum: 27890.45,
         riskRating: 3.3,
         nav: 445.67,
-        returns: {
+        returns: const {
           '1Y': 13.2,
           '3Y': 15.8,
           '5Y': 17.5,
@@ -102,7 +102,7 @@ class MutualFundService {
         aum: 15678.90,
         riskRating: 3.8,
         nav: 178.90,
-        returns: {
+        returns: const {
           '1Y': 16.5,
           '3Y': 19.2,
           '5Y': 21.8,

@@ -50,7 +50,9 @@ class DatabaseService {
         symbol TEXT NOT NULL,
         name TEXT NOT NULL,
         currentPrice REAL NOT NULL,
-        lastUpdated TEXT NOT NULL
+        lastUpdated TEXT NOT NULL,
+        assetClass TEXT NOT NULL,
+        providerSymbol TEXT
       )
     ''');
   
@@ -247,6 +249,10 @@ class DatabaseService {
       await db.execute('ALTER TABLE transactions ADD COLUMN tradeId TEXT');
       await db.execute('ALTER TABLE transactions ADD COLUMN realizedPnLPerTx REAL');
       await db.execute('CREATE INDEX IF NOT EXISTS idx_transactions_accountId ON transactions(accountId)');
+
+      // Extend assets table with new fields
+      await db.execute('ALTER TABLE assets ADD COLUMN assetClass TEXT NOT NULL DEFAULT \'stock\'');
+      await db.execute('ALTER TABLE assets ADD COLUMN providerSymbol TEXT');
 
       // Scopes (Lenses)
       await db.execute('''

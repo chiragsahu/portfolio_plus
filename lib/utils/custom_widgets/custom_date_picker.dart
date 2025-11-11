@@ -155,7 +155,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
                       ),
                     ),
                   ),
-                  Icon(Icons.calendar_today, color: AppColors.greyMidText),
+                  const Icon(Icons.calendar_today, color: AppColors.greyMidText),
                 ],
               ),
             ),

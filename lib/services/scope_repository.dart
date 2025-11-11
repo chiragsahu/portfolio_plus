@@ -1,6 +1,5 @@
 import 'package:portfolio_plus/models/scope.dart';
 import 'package:portfolio_plus/services/database_service.dart';
-import 'package:sqflite/sqflite.dart';
 
 class ScopeRepository {
   final DatabaseService _databaseService = DatabaseService();

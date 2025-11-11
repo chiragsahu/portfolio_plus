@@ -6,7 +6,6 @@ import 'package:portfolio_plus/modules/tools/view/comparison/widgets/fund_compar
 import 'package:portfolio_plus/modules/tools/view/comparison/widgets/comparison_metrics_widget.dart';
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/ts.dart';
-import 'package:portfolio_plus/utils/extensions/number_extension.dart';
 import 'package:portfolio_plus/utils/custom_widgets/input_text_field.dart';
 
 class MutualFundComparisonScreen extends ConsumerStatefulWidget {

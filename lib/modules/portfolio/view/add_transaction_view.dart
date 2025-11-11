@@ -4,8 +4,6 @@ import 'package:portfolio_plus/models/account.dart';
 import 'package:portfolio_plus/models/transaction.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/account_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/transaction_provider.dart';
-import 'package:portfolio_plus/services/account_repository.dart';
-import 'package:portfolio_plus/services/provider_repository.dart';
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/enums/currency.dart';
 import 'package:portfolio_plus/utils/enums/transaction.dart';

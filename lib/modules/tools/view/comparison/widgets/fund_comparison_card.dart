@@ -59,7 +59,7 @@ class FundComparisonCard extends StatelessWidget {
                   if (isSelected)
                     Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppColors.blue,
                         shape: BoxShape.circle,
                       ),

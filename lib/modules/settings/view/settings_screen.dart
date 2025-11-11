@@ -68,7 +68,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildBody(BuildContext context, SettingsState state, SettingsNotifier notifier) {
-    final currencyItems = Currency.values;
+    const currencyItems = Currency.values;
 
     // Keep controller synced with state without using ref.listen in initState
     final String fxTxt = (state.usdInrRate != null) ? state.usdInrRate!.toString() : '';
@@ -118,7 +118,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Text('Currency Conversion', style: Ts.semiBold18(AppColors.black)),
           const SizedBox(height: 12),
 
-          _InfoTile(
+          const _InfoTile(
             icon: Icons.currency_exchange,
             title: 'USD ↔ INR',
             subtitle: 'Provide USD to INR rate for conversions between these currencies.',
