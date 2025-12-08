@@ -41,7 +41,7 @@ class _ScopesListViewState extends ConsumerState<ScopesListView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scopes'),
+        title: const Text('Baskets'),
         backgroundColor: AppColors.blueGrey,
         foregroundColor: Colors.white,
         actions: [
@@ -55,7 +55,7 @@ class _ScopesListViewState extends ConsumerState<ScopesListView> {
                 ),
               );
             },
-            tooltip: 'Add Scope',
+            tooltip: 'Add Basket',
           ),
         ],
       ),
@@ -72,7 +72,7 @@ class _ScopesListViewState extends ConsumerState<ScopesListView> {
                     padding: const EdgeInsets.all(16.0),
                     child: CustomInputField(
                       controller: _searchController,
-                      hint: 'Search scopes...',
+                      hint: 'Search baskets...',
                       prefixIcon: const Icon(Icons.search),
                       borderRadius: 12,
                       fillColor: Colors.grey[100],
@@ -94,8 +94,8 @@ class _ScopesListViewState extends ConsumerState<ScopesListView> {
                           const SizedBox(height: 16),
                           Text(
                             _searchQuery.isEmpty
-                                ? 'No scopes yet'
-                                : 'No scopes found',
+                                ? 'No baskets yet'
+                                : 'No baskets found',
                             style: Ts.regular18(Colors.grey[600] ?? Colors.grey),
                           ),
                           const SizedBox(height: 16),
@@ -109,7 +109,7 @@ class _ScopesListViewState extends ConsumerState<ScopesListView> {
                                   ),
                                 );
                               },
-                              child: const Text('Create Your First Scope'),
+                              child: const Text('Create Your First Basket'),
                             ),
                         ],
                       ),
@@ -159,7 +159,7 @@ class _ScopesListViewState extends ConsumerState<ScopesListView> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Error loading scopes',
+                'Error loading baskets',
                 style: Ts.regular18(Colors.red[600] ?? Colors.red),
               ),
               const SizedBox(height: 8),
@@ -186,7 +186,7 @@ class _ScopesListViewState extends ConsumerState<ScopesListView> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Scope'),
+        title: const Text('Delete Basket'),
         content: Text('Are you sure you want to delete "${scope.name}"? This action cannot be undone.'),
         actions: [
           TextButton(
@@ -275,7 +275,7 @@ class ScopeCard extends StatelessWidget {
                 icon: const Icon(Icons.delete_outline),
                 onPressed: onDelete,
                 color: Colors.red[400],
-                tooltip: 'Delete Scope',
+                tooltip: 'Delete Basket',
               ),
               Icon(
                 Icons.arrow_forward_ios,

@@ -89,7 +89,7 @@ class _AddEditScopeViewState extends ConsumerState<AddEditScopeView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Scope' : 'Add Scope'),
+        title: Text(isEditing ? 'Edit Basket' : 'Add Basket'),
         backgroundColor: AppColors.blueGrey,
         foregroundColor: Colors.white,
         actions: [
@@ -97,7 +97,7 @@ class _AddEditScopeViewState extends ConsumerState<AddEditScopeView> {
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: _deleteScope,
-              tooltip: 'Delete Scope',
+              tooltip: 'Delete Basket',
             ),
         ],
       ),
@@ -108,10 +108,10 @@ class _AddEditScopeViewState extends ConsumerState<AddEditScopeView> {
           children: [
             CustomInputField(
               controller: _nameController,
-              hint: 'Scope Name',
+              hint: 'Basket Name',
               validator: (value) {
                 if (value?.isEmpty ?? true) {
-                  return 'Please enter a scope name';
+                  return 'Please enter a basket name';
                 }
                 return null;
               },
@@ -185,7 +185,7 @@ class _AddEditScopeViewState extends ConsumerState<AddEditScopeView> {
               ),
               child: _isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : Text(isEditing ? 'Update Scope' : 'Create Scope'),
+                  : Text(isEditing ? 'Update Basket' : 'Create Basket'),
             ),
           ],
         ),
@@ -220,7 +220,7 @@ class _AddEditScopeViewState extends ConsumerState<AddEditScopeView> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving scope: $e')),
+          SnackBar(content: Text('Error saving basket: $e')),
         );
       }
     } finally {
@@ -234,7 +234,7 @@ class _AddEditScopeViewState extends ConsumerState<AddEditScopeView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Scope'),
+        title: const Text('Delete Basket'),
         content: Text('Are you sure you want to delete "${widget.scope!.name}"?'),
         actions: [
           TextButton(
@@ -258,7 +258,7 @@ class _AddEditScopeViewState extends ConsumerState<AddEditScopeView> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error deleting scope: $e')),
+            SnackBar(content: Text('Error deleting basket: $e')),
           );
         }
       }

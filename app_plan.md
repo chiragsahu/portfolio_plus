@@ -248,7 +248,7 @@ lib/
 5. Social features
 6. Tax reporting
 
-## Architecture Addendum: Multi-account, Exchanges, Sub-accounts, and Saved Views ("Lens")
+## Architecture Addendum: Multi-account, Exchanges, Sub-accounts, and Saved Views ("Basket")
 
 To support multiple providers (e.g., Zerodha, Groww) and crypto exchanges (e.g., Bybit with sub-accounts), adopt an account-first domain model with a flexible saved-view layer:
 
@@ -257,26 +257,26 @@ To support multiple providers (e.g., Zerodha, Groww) and crypto exchanges (e.g.,
   - Account: A user account at a provider. Supports self-referencing parentId to model sub-accounts (e.g., Bybit Main, Bybit Trading Subaccount-1).
   - Asset: A security or instrument (stock, coin, mutual fund, bond, commodity).
   - Scope (internal): A filter that selects a set of Providers/Accounts/Sub-accounts/Assets/Tags and optional date range.
-  - Lens (user-facing): A saved view mapped to an internal Scope. Users select a Lens to slice and aggregate analytics.
+  - Basket (user-facing): A saved view mapped to an internal Scope. Users select a Basket to slice and aggregate analytics.
 
 - Hierarchy
   Provider → Account → Sub-account → Asset → Transactions
   Aggregations flow upward: per Asset within Account, then to Account, Provider, and finally to Lens.
 
-- Saved Views ("Lens")
-  - Users can create multiple Lenses that capture selections like:
+- Saved Views ("Basket")
+  - Users can create multiple Baskets that capture selections like:
     - All Zerodha stocks only
     - All Groww stocks only
     - All Bybit sub-accounts individually or combined
     - Cross-provider slices (e.g., all Mutual Funds across Zerodha + Groww)
-  - Each Lens can optionally override base currency for display.
+  - Each Basket can optionally override base currency for display.
 
 - Examples
   - Stocks:
-    - Zerodha Lens: shows realized/unrealized PnL for stocks held via Zerodha only.
-    - Groww Lens: isolated view for Groww holdings.
+    - Zerodha Basket: shows realized/unrealized PnL for stocks held via Zerodha only.
+    - Groww Basket: isolated view for Groww holdings.
   - Crypto:
-    - Bybit Main vs Subaccount-1 vs Subaccount-2 Lenses: view realized/unrealized PnL individually, or one combined Lens including all sub-accounts.
+    - Bybit Main vs Subaccount-1 vs Subaccount-2 Baskets: view realized/unrealized PnL individually, or one combined Basket including all sub-accounts.
 
 ## Multi-currency and FX
 
@@ -329,6 +329,6 @@ Note: Existing tables for portfolios, transactions, assets, tags remain. Transac
 
 ## Naming Decision
 
-- User-facing name: Lens (maps to internal Scope)
+- User-facing name: Basket (maps to internal Scope)
   - Short, intuitive, communicates “a way of looking at your data”.
-  - Alternatives considered: Scope, Basket, Deck, View, Hub, Stack. Lens selected for clarity and branding.
+  - Alternatives considered: Lens, Scope, Deck, View, Hub, Stack. Basket selected for clarity and grouping metaphor.

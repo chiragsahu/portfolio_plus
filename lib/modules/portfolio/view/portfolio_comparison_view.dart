@@ -18,7 +18,7 @@ class PortfolioComparisonView extends ConsumerStatefulWidget {
 }
 
 class _PortfolioComparisonViewState extends ConsumerState<PortfolioComparisonView> {
-  List<Portfolio> _selectedPortfolios = [];
+  final List<Portfolio> _selectedPortfolios = [];
   bool _isComparing = false;
 
   @override
