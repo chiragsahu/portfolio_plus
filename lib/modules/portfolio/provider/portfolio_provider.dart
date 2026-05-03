@@ -1,22 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portfolio_plus/models/portfolio.dart';
 import 'package:portfolio_plus/services/portfolio_repository.dart';
-import 'package:portfolio_plus/services/tag_repository.dart';
 
 // Portfolio repository provider
 final portfolioRepositoryProvider = Provider<PortfolioRepository>((ref) {
   return PortfolioRepository();
 });
 
-// Tag repository provider
-final tagRepositoryProvider = Provider<TagRepository>((ref) {
-  return TagRepository();
-});
-
 // Portfolio list provider
-final portfolioListProvider = StateNotifierProvider<PortfolioListNotifier, AsyncValue<List<Portfolio>>>((ref) {
-  return PortfolioListNotifier(ref.read(portfolioRepositoryProvider));
-});
+final portfolioListProvider =
+    StateNotifierProvider<PortfolioListNotifier, AsyncValue<List<Portfolio>>>((
+      ref,
+    ) {
+      return PortfolioListNotifier(ref.read(portfolioRepositoryProvider));
+    });
 
 class PortfolioListNotifier extends StateNotifier<AsyncValue<List<Portfolio>>> {
   final PortfolioRepository _repository;
@@ -86,15 +83,19 @@ class PortfolioListNotifier extends StateNotifier<AsyncValue<List<Portfolio>>> {
 }
 
 // Individual portfolio provider
-final portfolioProvider = StateNotifierProvider.family<PortfolioNotifier, AsyncValue<Portfolio>, int>((ref, id) {
-  return PortfolioNotifier(ref.read(portfolioRepositoryProvider), id);
-});
+final portfolioProvider =
+    StateNotifierProvider.family<PortfolioNotifier, AsyncValue<Portfolio>, int>(
+      (ref, id) {
+        return PortfolioNotifier(ref.read(portfolioRepositoryProvider), id);
+      },
+    );
 
 class PortfolioNotifier extends StateNotifier<AsyncValue<Portfolio>> {
   final PortfolioRepository _repository;
   final int _portfolioId;
 
-  PortfolioNotifier(this._repository, this._portfolioId) : super(const AsyncValue.loading()) {
+  PortfolioNotifier(this._repository, this._portfolioId)
+    : super(const AsyncValue.loading()) {
     loadPortfolio();
   }
 
@@ -125,13 +126,17 @@ class PortfolioNotifier extends StateNotifier<AsyncValue<Portfolio>> {
 }
 
 // Portfolio statistics provider
-final portfolioStatisticsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final portfolioStatisticsProvider = FutureProvider<Map<String, dynamic>>((
+  ref,
+) async {
   final repository = ref.read(portfolioRepositoryProvider);
   return await repository.getPortfolioStatistics();
 });
 
 // Portfolios by investment type provider
-final portfoliosByTypeProvider = FutureProvider.family<List<Portfolio>, String>((ref, investmentType) async {
-  final repository = ref.read(portfolioRepositoryProvider);
-  return await repository.getPortfoliosByInvestmentType(investmentType);
-});
+final portfoliosByTypeProvider = FutureProvider.family<List<Portfolio>, String>(
+  (ref, investmentType) async {
+    final repository = ref.read(portfolioRepositoryProvider);
+    return await repository.getPortfoliosByInvestmentType(investmentType);
+  },
+);
