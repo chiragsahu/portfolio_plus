@@ -12,14 +12,14 @@ String _$bottomNavStateHash() => r'54d1c8f7d67afe7a7651bdd5b73a583288e44413';
 @ProviderFor(BottomNavState)
 final bottomNavStateProvider =
     AutoDisposeNotifierProvider<BottomNavState, PageModel>.internal(
-  BottomNavState.new,
-  name: r'bottomNavStateProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$bottomNavStateHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
+      BottomNavState.new,
+      name: r'bottomNavStateProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$bottomNavStateHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
 
 typedef _$BottomNavState = AutoDisposeNotifier<PageModel>;
 // ignore_for_file: type=lint

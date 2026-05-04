@@ -18,7 +18,8 @@ class EditTransactionView extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<EditTransactionView> createState() => _EditTransactionViewState();
+  ConsumerState<EditTransactionView> createState() =>
+      _EditTransactionViewState();
 }
 
 class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
@@ -40,7 +41,9 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
 
   @override
   Widget build(BuildContext context) {
-    final transactionAsync = ref.watch(transactionProvider(widget.transactionId));
+    final transactionAsync = ref.watch(
+      transactionProvider(widget.transactionId),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -135,7 +138,10 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
                     fillColor: Colors.grey[100],
                     borderRadius: 12,
                     suffixIcon: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 0,
+                      ),
                       child: Text('₹', style: Ts.semiBold16(AppColors.black)),
                     ),
                     validator: (value) {
@@ -154,10 +160,7 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
                   ),
                   const SizedBox(height: 20),
 
-                  Text(
-                    'Amount',
-                    style: Ts.semiBold16(AppColors.black),
-                  ),
+                  Text('Amount', style: Ts.semiBold16(AppColors.black)),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -181,10 +184,7 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
                   ),
                   const SizedBox(height: 20),
 
-                  Text(
-                    'Date',
-                    style: Ts.semiBold16(AppColors.black),
-                  ),
+                  Text('Date', style: Ts.semiBold16(AppColors.black)),
                   const SizedBox(height: 8),
                   InkWell(
                     onTap: _pickDate,
@@ -232,7 +232,9 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
                     child: ElevatedButton(
                       onPressed: () => _updateTransaction(transaction),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _getTransactionTypeColor(_selectedType),
+                        backgroundColor: _getTransactionTypeColor(
+                          _selectedType,
+                        ),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -241,7 +243,10 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
                       ),
                       child: const Text(
                         'Update Transaction',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -250,18 +255,12 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
             ),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red[400],
-              ),
+              Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
               const SizedBox(height: 16),
               Text(
                 'Error loading transaction',
@@ -312,11 +311,15 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
         price: double.parse(_priceController.text),
         amount: _calculateAmount(),
         date: _selectedDate,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
       );
 
       try {
-        await ref.read(transactionListProvider(widget.portfolioId).notifier).updateTransaction(updated);
+        await ref
+            .read(transactionListProvider(widget.portfolioId).notifier)
+            .updateTransaction(updated);
         if (mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(

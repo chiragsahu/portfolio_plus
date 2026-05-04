@@ -12,6 +12,7 @@ class Asset extends Equatable {
   final DateTime lastUpdated;
   final String assetClass;
   final String? providerSymbol;
+  final String? isin;
 
   const Asset({
     this.id,
@@ -21,6 +22,7 @@ class Asset extends Equatable {
     required this.lastUpdated,
     required this.assetClass,
     this.providerSymbol,
+    this.isin,
   });
 
   Asset copyWith({
@@ -31,6 +33,7 @@ class Asset extends Equatable {
     DateTime? lastUpdated,
     String? assetClass,
     String? providerSymbol,
+    String? isin,
   }) {
     return Asset(
       id: id ?? this.id,
@@ -40,6 +43,7 @@ class Asset extends Equatable {
       lastUpdated: lastUpdated ?? this.lastUpdated,
       assetClass: assetClass ?? this.assetClass,
       providerSymbol: providerSymbol ?? this.providerSymbol,
+      isin: isin ?? this.isin,
     );
   }
 
@@ -56,6 +60,7 @@ class Asset extends Equatable {
       'lastUpdated': lastUpdated.toIso8601String(),
       'assetClass': assetClass,
       'providerSymbol': providerSymbol,
+      'isin': isin,
     };
   }
 
@@ -68,14 +73,24 @@ class Asset extends Equatable {
       lastUpdated: DateTime.parse(map['lastUpdated']),
       assetClass: map['assetClass'] ?? '',
       providerSymbol: map['providerSymbol'],
+      isin: map['isin'],
     );
   }
 
   @override
-  List<Object?> get props => [id, symbol, name, currentPrice, lastUpdated, assetClass, providerSymbol];
+  List<Object?> get props => [
+        id,
+        symbol,
+        name,
+        currentPrice,
+        lastUpdated,
+        assetClass,
+        providerSymbol,
+        isin,
+      ];
 
   @override
   String toString() {
-    return 'Asset(id: $id, symbol: $symbol, name: $name, currentPrice: $currentPrice, assetClass: $assetClass, providerSymbol: $providerSymbol)';
+    return 'Asset(id: $id, symbol: $symbol, name: $name, currentPrice: $currentPrice, assetClass: $assetClass, providerSymbol: $providerSymbol, isin: $isin)';
   }
 }
