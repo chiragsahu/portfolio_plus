@@ -47,6 +47,10 @@ dependencies:
   json_annotation: ^4.9.0
   share_plus: ^7.2.2
   file_saver: ^0.2.13
+  pdf: ^3.11.1
+  excel: ^4.0.5
+  path_provider: ^2.1.2
+  screenshot: ^3.0.0
 
 dev_dependencies:
   flutter_test:
