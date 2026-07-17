@@ -13,6 +13,8 @@ class Asset extends Equatable {
   final String assetClass;
   final String? providerSymbol;
   final String? isin;
+  final double? faceValue;
+  final String? series;
 
   const Asset({
     this.id,
@@ -23,6 +25,8 @@ class Asset extends Equatable {
     required this.assetClass,
     this.providerSymbol,
     this.isin,
+    this.faceValue,
+    this.series,
   });
 
   Asset copyWith({
@@ -34,6 +38,8 @@ class Asset extends Equatable {
     String? assetClass,
     String? providerSymbol,
     String? isin,
+    double? faceValue,
+    String? series,
   }) {
     return Asset(
       id: id ?? this.id,
@@ -44,6 +50,8 @@ class Asset extends Equatable {
       assetClass: assetClass ?? this.assetClass,
       providerSymbol: providerSymbol ?? this.providerSymbol,
       isin: isin ?? this.isin,
+      faceValue: faceValue ?? this.faceValue,
+      series: series ?? this.series,
     );
   }
 
@@ -61,6 +69,8 @@ class Asset extends Equatable {
       'assetClass': assetClass,
       'providerSymbol': providerSymbol,
       'isin': isin,
+      'faceValue': faceValue,
+      'series': series,
     };
   }
 
@@ -74,6 +84,8 @@ class Asset extends Equatable {
       assetClass: map['assetClass'] ?? '',
       providerSymbol: map['providerSymbol'],
       isin: map['isin'],
+      faceValue: map['faceValue']?.toDouble(),
+      series: map['series'],
     );
   }
 
@@ -87,10 +99,12 @@ class Asset extends Equatable {
         assetClass,
         providerSymbol,
         isin,
+        faceValue,
+        series,
       ];
 
   @override
   String toString() {
-    return 'Asset(id: $id, symbol: $symbol, name: $name, currentPrice: $currentPrice, assetClass: $assetClass, providerSymbol: $providerSymbol, isin: $isin)';
+    return 'Asset(id: $id, symbol: $symbol, name: $name, currentPrice: $currentPrice, assetClass: $assetClass, providerSymbol: $providerSymbol, isin: $isin, faceValue: $faceValue, series: $series)';
   }
 }

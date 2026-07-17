@@ -1,3 +1,5 @@
+import 'package:portfolio_plus/models/asset.dart';
+import 'package:portfolio_plus/services/asset_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portfolio_plus/models/transaction.dart';
@@ -420,9 +422,20 @@ class TransactionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      transaction.type.displayName,
-                      style: Ts.semiBold16(AppColors.black),
+                    FutureBuilder<Asset?>(
+                      future: transaction.assetId != null
+                          ? AssetRepository().getAssetById(transaction.assetId!)
+                          : Future.value(null),
+                      builder: (context, snapshot) {
+                        final symbolPrefix = snapshot.data != null
+                            ? '${snapshot.data!.symbol} ('
+                            : '';
+                        final symbolSuffix = snapshot.data != null ? ')' : '';
+                        return Text(
+                          '$symbolPrefix${transaction.type.displayName}$symbolSuffix',
+                          style: Ts.semiBold16(AppColors.black),
+                        );
+                      },
                     ),
                     const SizedBox(height: 4),
                     Text(

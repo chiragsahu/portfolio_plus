@@ -1,5 +1,6 @@
 import 'dart:collection';
 import 'package:portfolio_plus/services/transaction_repository.dart';
+import 'package:portfolio_plus/services/asset_repository.dart';
 import 'package:portfolio_plus/utils/enums/transaction.dart';
 
 /// Represents a single position lot with quantity and total cost
@@ -89,8 +90,9 @@ class FifoPositionEngine {
 
 class PortfolioCalculationsService {
   final TransactionRepository _transactionRepository;
+  final AssetRepository _assetRepository;
 
-  PortfolioCalculationsService(this._transactionRepository);
+  PortfolioCalculationsService(this._transactionRepository, this._assetRepository);
 
   /// Map of FIFO engines keyed by '${accountId}_${assetId}' for per-account+asset tracking
   final Map<String, FifoPositionEngine> _engines = {};
@@ -117,6 +119,7 @@ class PortfolioCalculationsService {
       'totalPnL': values['totalPnL'],
       'totalDividends': values['totalDividends'],
       'totalFees': values['totalFees'],
+      'totalPnLPercentage': values['totalReturnPercent'] ?? 0.0,
     };
   }
 
@@ -145,7 +148,49 @@ class PortfolioCalculationsService {
 
   /// Calculate asset allocation (placeholder - needs asset data)
   Future<Map<String, dynamic>> calculateAssetAllocation(int portfolioId) async {
+    final transactions = await _transactionRepository.getTransactionsByPortfolioId(portfolioId);
+    
+    // Group quantities by assetId
+    final Map<int, double> assetQuantities = {};
+    for (final tx in transactions) {
+      if (tx.assetId == null) continue;
+      final qty = tx.quantity;
+      if (tx.type == TransactionType.buy || tx.type == TransactionType.deposit || tx.type == TransactionType.split || tx.type == TransactionType.bonus) {
+        assetQuantities[tx.assetId!] = (assetQuantities[tx.assetId!] ?? 0.0) + qty;
+      } else if (tx.type == TransactionType.sell || tx.type == TransactionType.withdrawal) {
+        assetQuantities[tx.assetId!] = (assetQuantities[tx.assetId!] ?? 0.0) - qty;
+      }
+    }
+
+    final Map<String, double> assetValues = {};
+    double totalValue = 0.0;
+
+    for (final entry in assetQuantities.entries) {
+      final assetId = entry.key;
+      final qty = entry.value;
+      if (qty <= 0.0001) continue; // ignore zero/negative holdings
+
+      final asset = await _assetRepository.getAssetById(assetId);
+      if (asset == null) continue;
+
+      final price = asset.currentPrice > 0 ? asset.currentPrice : 0.0;
+      final value = qty * price;
+      final key = asset.symbol.isNotEmpty ? asset.symbol : asset.name;
+      assetValues[key] = value;
+      totalValue += value;
+    }
+
+    final Map<String, double> allocation = {};
+    if (totalValue > 0) {
+      assetValues.forEach((key, value) {
+        allocation[key] = (value / totalValue) * 100;
+      });
+    }
+
     return {
+      'allocation': allocation,
+      'assetValues': assetValues,
+      'totalValue': totalValue,
       'byAssetClass': <String, double>{},
       'byAccount': <String, double>{},
       'byProvider': <String, double>{},
@@ -184,22 +229,29 @@ class PortfolioCalculationsService {
 
     for (final transaction in transactions) {
       final engine = _getEngine(transaction.accountId, transaction.assetId);
+      final double absoluteFee = transaction.fee != null ? transaction.amount * (transaction.fee! / 100) : 0.0;
 
       switch (transaction.type) {
         case TransactionType.buy:
-          engine.addBuy(transaction.quantity, transaction.amount);
-          totalInvested += transaction.amount;
-          if (transaction.fee != null) totalFees += transaction.fee!;
+          engine.addBuy(transaction.quantity, transaction.amount + absoluteFee);
+          totalInvested += transaction.amount + absoluteFee;
+          totalFees += absoluteFee;
           break;
 
         case TransactionType.sell:
           double realizedPnL = engine.addSell(
             transaction.quantity,
-            transaction.amount,
+            transaction.amount - absoluteFee,
           );
-          totalSold += transaction.amount;
+          totalSold += transaction.amount - absoluteFee;
           totalRealizedPnL += realizedPnL;
-          if (transaction.fee != null) totalFees += transaction.fee!;
+          totalFees += absoluteFee;
+          
+          if (transaction.realizedPnLPerTx != realizedPnL) {
+            await _transactionRepository.updateTransaction(
+              transaction.copyWith(realizedPnLPerTx: realizedPnL),
+            );
+          }
           break;
 
         case TransactionType.dividend:

@@ -3,9 +3,16 @@ import 'package:portfolio_plus/services/portfolio_calculations_service.dart';
 import 'package:portfolio_plus/services/portfolio_repository.dart';
 import 'package:portfolio_plus/services/transaction_repository.dart';
 
+import 'package:portfolio_plus/services/asset_repository.dart';
+
 // Provider for transaction repository
 final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
   return TransactionRepository();
+});
+
+// Provider for asset repository
+final assetRepositoryProvider = Provider<AssetRepository>((ref) {
+  return AssetRepository();
 });
 
 // Provider for portfolio repository
@@ -16,7 +23,8 @@ final portfolioRepositoryProvider = Provider<PortfolioRepository>((ref) {
 // Provider for the portfolio calculations service
 final portfolioCalculationsServiceProvider = Provider<PortfolioCalculationsService>((ref) {
   final transactionRepository = ref.watch(transactionRepositoryProvider);
-  return PortfolioCalculationsService(transactionRepository);
+  final assetRepository = ref.watch(assetRepositoryProvider);
+  return PortfolioCalculationsService(transactionRepository, assetRepository);
 });
 
 // Provider for portfolio summary data

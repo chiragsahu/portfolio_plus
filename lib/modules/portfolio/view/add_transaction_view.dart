@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portfolio_plus/models/account.dart';
 import 'package:portfolio_plus/models/transaction.dart';
+import 'package:portfolio_plus/models/asset.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/account_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/transaction_provider.dart';
+import 'package:portfolio_plus/modules/portfolio/view/widgets/searchable_ticker_dropdown.dart';
+import 'package:portfolio_plus/services/asset_repository.dart';
+import 'package:portfolio_plus/services/ticker_loader_service.dart';
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/enums/currency.dart';
 import 'package:portfolio_plus/utils/enums/transaction.dart';
@@ -25,6 +29,7 @@ class AddTransactionView extends ConsumerStatefulWidget {
 
 class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
   final _formKey = GlobalKey<FormState>();
+  final _tickerController = TextEditingController();
   final _quantityController = TextEditingController();
   final _priceController = TextEditingController();
   final _feeController = TextEditingController();
@@ -36,9 +41,11 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
   int? _selectedAccountId;
   Currency _selectedFeeCurrency = Currency.inr;
   Currency _selectedQuoteCurrency = Currency.inr;
+  IndianEquityTicker? _selectedTicker;
 
   @override
   void dispose() {
+    _tickerController.dispose();
     _quantityController.dispose();
     _priceController.dispose();
     _feeController.dispose();
@@ -133,6 +140,18 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
               ),
               const SizedBox(height: 20),
 
+              // Ticker Symbol Dropdown
+              SearchableTickerDropdown(
+                initialValue: _selectedTicker?.symbol,
+                onSelected: (ticker) {
+                  setState(() {
+                    _selectedTicker = ticker;
+                    _tickerController.text = ticker.symbol;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+
               // Quantity
               CustomInputField(
                 label: 'Quantity',
@@ -187,35 +206,17 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
 
               // Fee
               CustomInputField(
-                label: 'Fee (Optional)',
+                label: 'Fee (%) (Optional)',
                 controller: _feeController,
-                hint: 'Enter transaction fee',
+                hint: 'Enter transaction fee percentage',
                 keyboardType: TextInputType.number,
                 fillColor: Colors.grey[100],
                 borderRadius: 12,
+                suffixIcon: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  child: Text('%', style: Ts.semiBold16(AppColors.black)),
+                ),
                 onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 20),
-
-              // Fee Currency
-              Text(
-                'Fee Currency',
-                style: Ts.semiBold16(AppColors.black),
-              ),
-              const SizedBox(height: 8),
-              CustomDropdown<Currency>(
-                selectedItem: _selectedFeeCurrency,
-                items: Currency.values,
-                itemToString: (currency) => currency.displayName,
-                onChanged: (currency) {
-                  if (currency != null) {
-                    setState(() {
-                      _selectedFeeCurrency = currency;
-                    });
-                  }
-                },
-                hintText: 'Select fee currency',
-                borderRadius: 12,
               ),
               const SizedBox(height: 20),
 
@@ -379,9 +380,44 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
 
   void _addTransaction() async {
     if (_formKey.currentState!.validate()) {
+      int? assetId;
+      final ticker = _tickerController.text.trim().toUpperCase();
+      if (ticker.isNotEmpty) {
+        final assetRepo = AssetRepository();
+        var asset = await assetRepo.getAssetBySymbol(ticker);
+        if (asset == null) {
+          final newAsset = Asset(
+            symbol: ticker,
+            name: _selectedTicker?.name ?? ticker,
+            isin: _selectedTicker?.isin,
+            faceValue: _selectedTicker?.faceValue,
+            series: _selectedTicker?.series,
+            currentPrice: double.tryParse(_priceController.text) ?? 0.0,
+            lastUpdated: DateTime.now(),
+            assetClass: 'stock',
+          );
+          assetId = await assetRepo.createAsset(newAsset);
+        } else {
+          assetId = asset.id;
+          if (asset.isin == null || asset.faceValue == null || asset.series == null) {
+            final updatedAsset = asset.copyWith(
+              isin: asset.isin ?? _selectedTicker?.isin,
+              faceValue: asset.faceValue ?? _selectedTicker?.faceValue,
+              series: asset.series ?? _selectedTicker?.series,
+            );
+            await assetRepo.updateAsset(updatedAsset);
+          }
+          final price = double.tryParse(_priceController.text);
+          if (price != null && assetId != null) {
+            await assetRepo.updateAssetPrice(assetId, price);
+          }
+        }
+      }
+
       final transaction = TransactionModel(
         portfolioId: widget.portfolioId,
         accountId: _selectedAccountId,
+        assetId: assetId,
         type: _selectedType,
         quantity: double.parse(_quantityController.text),
         price: double.parse(_priceController.text),
@@ -424,6 +460,9 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
       }
     }
   }
+
+
+
 
   Color _getTransactionTypeColor(TransactionType type) {
     switch (type) {

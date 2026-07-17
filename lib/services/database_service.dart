@@ -23,7 +23,7 @@ class DatabaseService {
     
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -53,7 +53,9 @@ class DatabaseService {
         currentPrice REAL NOT NULL,
         lastUpdated TEXT NOT NULL,
         assetClass TEXT NOT NULL,
-        providerSymbol TEXT
+        providerSymbol TEXT,
+        faceValue REAL,
+        series TEXT
       )
     ''');
   
@@ -202,7 +204,7 @@ class DatabaseService {
         value TEXT NOT NULL
       )
     ''');
-
+ 
     await db.execute('''
       CREATE TABLE fx_rates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -213,7 +215,7 @@ class DatabaseService {
         createdAt TEXT NOT NULL
       )
     ''');
-
+ 
     await db.execute('''
       CREATE TABLE scopes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -224,7 +226,7 @@ class DatabaseService {
         updatedAt TEXT NOT NULL
       )
     ''');
-
+ 
     await db.execute('''
       CREATE TABLE portfolio_scopes (
         portfolioId INTEGER NOT NULL,
@@ -336,6 +338,11 @@ class DatabaseService {
           FOREIGN KEY (scopeId) REFERENCES scopes (id) ON DELETE CASCADE
         )
       ''');
+    }
+
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE assets ADD COLUMN faceValue REAL');
+      await db.execute('ALTER TABLE assets ADD COLUMN series TEXT');
     }
   }
 

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portfolio_plus/models/transaction.dart';
+import 'package:portfolio_plus/models/asset.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/transaction_provider.dart';
+import 'package:portfolio_plus/modules/portfolio/view/widgets/searchable_ticker_dropdown.dart';
+import 'package:portfolio_plus/services/asset_repository.dart';
+import 'package:portfolio_plus/services/ticker_loader_service.dart';
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/ts.dart';
 import 'package:portfolio_plus/utils/custom_widgets/input_text_field.dart';
@@ -24,19 +28,53 @@ class EditTransactionView extends ConsumerStatefulWidget {
 
 class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
   final _formKey = GlobalKey<FormState>();
+  final _tickerController = TextEditingController();
   final _quantityController = TextEditingController();
   final _priceController = TextEditingController();
+  final _feeController = TextEditingController();
   final _notesController = TextEditingController();
   TransactionType _selectedType = TransactionType.buy;
   DateTime _selectedDate = DateTime.now();
   bool _initialized = false;
+  IndianEquityTicker? _selectedTicker;
 
   @override
   void dispose() {
+    _tickerController.dispose();
     _quantityController.dispose();
     _priceController.dispose();
+    _feeController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  void _loadAssetTicker(int assetId) async {
+    final asset = await AssetRepository().getAssetById(assetId);
+    if (asset != null && mounted) {
+      setState(() {
+        _tickerController.text = asset.symbol;
+      });
+      // Load corresponding ticker from sheet
+      final tickers = await TickerLoaderService().loadTickers();
+      final matched = tickers.firstWhere(
+        (t) => t.symbol.toUpperCase() == asset.symbol.toUpperCase(),
+        orElse: () => IndianEquityTicker(
+          symbol: asset.symbol,
+          name: asset.name,
+          series: asset.series ?? '',
+          dateOfListing: '',
+          paidUpValue: 0,
+          marketLot: 1,
+          isin: asset.isin ?? '',
+          faceValue: asset.faceValue ?? 10,
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _selectedTicker = matched;
+        });
+      }
+    }
   }
 
   @override
@@ -58,7 +96,11 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
             _selectedDate = transaction.date;
             _quantityController.text = transaction.quantity.toString();
             _priceController.text = transaction.price.toString();
+            _feeController.text = transaction.fee?.toString() ?? '';
             _notesController.text = transaction.notes ?? '';
+            if (transaction.assetId != null) {
+              _loadAssetTicker(transaction.assetId!);
+            }
             _initialized = true;
           }
 
@@ -92,7 +134,7 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
                               _getTransactionTypeIcon(type),
                               color: _getTransactionTypeColor(type),
                               size: 20,
-                            ),
+                        ),
                             const SizedBox(width: 12),
                             Text(type.displayName),
                           ],
@@ -102,6 +144,18 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
                     onChanged: (value) {
                       setState(() {
                         _selectedType = value!;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Ticker Symbol Dropdown
+                  SearchableTickerDropdown(
+                    initialValue: _selectedTicker?.symbol ?? _tickerController.text,
+                    onSelected: (ticker) {
+                      setState(() {
+                        _selectedTicker = ticker;
+                        _tickerController.text = ticker.symbol;
                       });
                     },
                   ),
@@ -156,6 +210,22 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
                       }
                       return null;
                     },
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Fee
+                  CustomInputField(
+                    label: 'Fee (%) (Optional)',
+                    controller: _feeController,
+                    hint: 'Enter transaction fee percentage',
+                    keyboardType: TextInputType.number,
+                    fillColor: Colors.grey[100],
+                    borderRadius: 12,
+                    suffixIcon: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      child: Text('%', style: Ts.semiBold16(AppColors.black)),
+                    ),
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 20),
@@ -305,11 +375,49 @@ class _EditTransactionViewState extends ConsumerState<EditTransactionView> {
 
   void _updateTransaction(TransactionModel original) async {
     if (_formKey.currentState!.validate()) {
+      int? assetId = original.assetId;
+      final ticker = _tickerController.text.trim().toUpperCase();
+      if (ticker.isNotEmpty) {
+        final assetRepo = AssetRepository();
+        var asset = await assetRepo.getAssetBySymbol(ticker);
+        if (asset == null) {
+          final newAsset = Asset(
+            symbol: ticker,
+            name: _selectedTicker?.name ?? ticker,
+            isin: _selectedTicker?.isin,
+            faceValue: _selectedTicker?.faceValue,
+            series: _selectedTicker?.series,
+            currentPrice: double.tryParse(_priceController.text) ?? 0.0,
+            lastUpdated: DateTime.now(),
+            assetClass: 'stock',
+          );
+          assetId = await assetRepo.createAsset(newAsset);
+        } else {
+          assetId = asset.id;
+          if (asset.isin == null || asset.faceValue == null || asset.series == null) {
+            final updatedAsset = asset.copyWith(
+              isin: asset.isin ?? _selectedTicker?.isin,
+              faceValue: asset.faceValue ?? _selectedTicker?.faceValue,
+              series: asset.series ?? _selectedTicker?.series,
+            );
+            await assetRepo.updateAsset(updatedAsset);
+          }
+          final price = double.tryParse(_priceController.text);
+          if (price != null && assetId != null) {
+            await assetRepo.updateAssetPrice(assetId, price);
+          }
+        }
+      }
+
       final updated = original.copyWith(
         type: _selectedType,
+        assetId: assetId,
         quantity: double.parse(_quantityController.text),
         price: double.parse(_priceController.text),
         amount: _calculateAmount(),
+        fee: _feeController.text.trim().isEmpty
+            ? null
+            : double.tryParse(_feeController.text),
         date: _selectedDate,
         notes: _notesController.text.trim().isEmpty
             ? null
