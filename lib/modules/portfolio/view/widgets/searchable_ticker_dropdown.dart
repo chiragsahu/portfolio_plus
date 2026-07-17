@@ -6,9 +6,10 @@ import 'package:portfolio_plus/utils/ts.dart';
 
 class SearchableTickerDropdown extends StatefulWidget {
   final String? initialValue;
-  final ValueChanged<IndianEquityTicker> onSelected;
+  final ValueChanged<dynamic> onSelected;
   final String label;
   final String hint;
+  final bool isCrypto;
 
   const SearchableTickerDropdown({
     super.key,
@@ -16,6 +17,7 @@ class SearchableTickerDropdown extends StatefulWidget {
     required this.onSelected,
     this.label = 'Search Ticker Symbol',
     this.hint = 'Search by Symbol or Company Name',
+    this.isCrypto = false,
   });
 
   @override
@@ -35,26 +37,52 @@ class _SearchableTickerDropdownState extends State<SearchableTickerDropdown> {
     _initTickerData();
   }
 
+  @override
+  void didUpdateWidget(covariant SearchableTickerDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isCrypto != widget.isCrypto) {
+      _selectedSymbol = null;
+      _selectedName = null;
+      _initTickerData();
+    }
+  }
+
   Future<void> _initTickerData() async {
     setState(() {
       _isLoading = true;
     });
-    final tickers = await _tickerLoader.loadTickers();
-    if (_selectedSymbol != null) {
-      final matched = tickers.firstWhere(
-        (t) => t.symbol.toUpperCase() == _selectedSymbol!.toUpperCase(),
-        orElse: () => IndianEquityTicker(
-          symbol: _selectedSymbol!,
-          name: _selectedSymbol!,
-          series: '',
-          dateOfListing: '',
-          paidUpValue: 0,
-          marketLot: 1,
-          isin: '',
-          faceValue: 10,
-        ),
-      );
-      _selectedName = matched.name;
+    if (widget.isCrypto) {
+      final tickers = await _tickerLoader.loadCryptoTickers();
+      if (_selectedSymbol != null) {
+        final matched = tickers.firstWhere(
+          (t) => t.symbol.toUpperCase() == _selectedSymbol!.toUpperCase(),
+          orElse: () => CryptoTicker(
+            cmcId: 0,
+            symbol: _selectedSymbol!,
+            name: _selectedSymbol!,
+            slug: '',
+          ),
+        );
+        _selectedName = matched.name;
+      }
+    } else {
+      final tickers = await _tickerLoader.loadTickers();
+      if (_selectedSymbol != null) {
+        final matched = tickers.firstWhere(
+          (t) => t.symbol.toUpperCase() == _selectedSymbol!.toUpperCase(),
+          orElse: () => IndianEquityTicker(
+            symbol: _selectedSymbol!,
+            name: _selectedSymbol!,
+            series: '',
+            dateOfListing: '',
+            paidUpValue: 0,
+            marketLot: 1,
+            isin: '',
+            faceValue: 10,
+          ),
+        );
+        _selectedName = matched.name;
+      }
     }
     if (mounted) {
       setState(() {
@@ -72,10 +100,18 @@ class _SearchableTickerDropdownState extends State<SearchableTickerDropdown> {
         return _TickerSearchSheet(
           tickerLoader: _tickerLoader,
           hint: widget.hint,
+          isCrypto: widget.isCrypto,
           onSelected: (ticker) {
             setState(() {
-              _selectedSymbol = ticker.symbol;
-              _selectedName = ticker.name;
+              if (widget.isCrypto) {
+                final crypto = ticker as CryptoTicker;
+                _selectedSymbol = crypto.symbol;
+                _selectedName = crypto.name;
+              } else {
+                final equity = ticker as IndianEquityTicker;
+                _selectedSymbol = equity.symbol;
+                _selectedName = equity.name;
+              }
             });
             widget.onSelected(ticker);
             Navigator.pop(context);
@@ -139,11 +175,13 @@ class _SearchableTickerDropdownState extends State<SearchableTickerDropdown> {
 class _TickerSearchSheet extends StatefulWidget {
   final TickerLoaderService tickerLoader;
   final String hint;
-  final ValueChanged<IndianEquityTicker> onSelected;
+  final bool isCrypto;
+  final ValueChanged<dynamic> onSelected;
 
   const _TickerSearchSheet({
     required this.tickerLoader,
     required this.hint,
+    required this.isCrypto,
     required this.onSelected,
   });
 
@@ -153,13 +191,13 @@ class _TickerSearchSheet extends StatefulWidget {
 
 class _TickerSearchSheetState extends State<_TickerSearchSheet> {
   final TextEditingController _searchController = TextEditingController();
-  List<IndianEquityTicker> _results = [];
+  List<dynamic> _results = [];
   bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
-    _results = widget.tickerLoader.cachedTickers;
+    _results = widget.isCrypto ? widget.tickerLoader.cachedCryptoTickers : widget.tickerLoader.cachedTickers;
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -173,7 +211,9 @@ class _TickerSearchSheetState extends State<_TickerSearchSheet> {
     final query = _searchController.text.trim();
     setState(() {
       _isSearching = query.isNotEmpty;
-      _results = widget.tickerLoader.searchTickers(query);
+      _results = widget.isCrypto
+          ? widget.tickerLoader.searchCryptoTickers(query)
+          : widget.tickerLoader.searchTickers(query);
     });
   }
 
@@ -235,7 +275,7 @@ class _TickerSearchSheetState extends State<_TickerSearchSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _isSearching ? 'Search Results' : 'All Equities',
+                  _isSearching ? 'Search Results' : (widget.isCrypto ? 'All Cryptos' : 'All Equities'),
                   style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
                 ),
                 Text(
@@ -252,61 +292,115 @@ class _TickerSearchSheetState extends State<_TickerSearchSheet> {
               itemCount: _results.length,
               separatorBuilder: (context, index) => const Divider(height: 1),
               itemBuilder: (context, index) {
-                final ticker = _results[index];
-                return ListTile(
-                  title: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        ticker.symbol,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      if (ticker.series.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            ticker.series,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryColor,
+                final item = _results[index];
+                if (widget.isCrypto) {
+                  final ticker = item as CryptoTicker;
+                  return ListTile(
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          ticker.symbol,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        if (ticker.blockchain != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              ticker.blockchain!,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryColor,
+                              ),
                             ),
                           ),
+                      ],
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Text(
+                          ticker.name,
+                          style: TextStyle(color: Colors.grey[800], fontSize: 13),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                    ],
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text(
-                        ticker.name,
-                        style: TextStyle(color: Colors.grey[800], fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
+                        if (ticker.contractAddress != null) ...[
+                          const SizedBox(height: 2),
                           Text(
-                            'ISIN: ${ticker.isin}',
+                            'Addr: ${ticker.contractAddress}',
                             style: const TextStyle(color: Colors.grey, fontSize: 11),
-                          ),
-                          Text(
-                            'Face Value: ₹${ticker.faceValue}',
-                            style: const TextStyle(color: Colors.grey, fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                      ),
-                    ],
-                  ),
-                  onTap: () => widget.onSelected(ticker),
-                );
+                      ],
+                    ),
+                    onTap: () => widget.onSelected(ticker),
+                  );
+                } else {
+                  final ticker = item as IndianEquityTicker;
+                  return ListTile(
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          ticker.symbol,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        if (ticker.series.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              ticker.series,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryColor,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Text(
+                          ticker.name,
+                          style: TextStyle(color: Colors.grey[800], fontSize: 13),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'ISIN: ${ticker.isin}',
+                              style: const TextStyle(color: Colors.grey, fontSize: 11),
+                            ),
+                            Text(
+                              'Face Value: ₹${ticker.faceValue}',
+                              style: const TextStyle(color: Colors.grey, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    onTap: () => widget.onSelected(ticker),
+                  );
+                }
               },
             ),
           ),

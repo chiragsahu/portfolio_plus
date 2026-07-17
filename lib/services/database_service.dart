@@ -23,7 +23,7 @@ class DatabaseService {
     
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -43,7 +43,7 @@ class DatabaseService {
       )
     ''');
   
-    // 2. Assets (with ISIN)
+    // 2. Assets (with ISIN & Crypto columns)
     await db.execute('''
       CREATE TABLE assets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +55,11 @@ class DatabaseService {
         assetClass TEXT NOT NULL,
         providerSymbol TEXT,
         faceValue REAL,
-        series TEXT
+        series TEXT,
+        cmcId INTEGER,
+        slug TEXT,
+        blockchain TEXT,
+        contractAddress TEXT
       )
     ''');
   
@@ -343,6 +347,13 @@ class DatabaseService {
     if (oldVersion < 4) {
       await db.execute('ALTER TABLE assets ADD COLUMN faceValue REAL');
       await db.execute('ALTER TABLE assets ADD COLUMN series TEXT');
+    }
+
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE assets ADD COLUMN cmcId INTEGER');
+      await db.execute('ALTER TABLE assets ADD COLUMN slug TEXT');
+      await db.execute('ALTER TABLE assets ADD COLUMN blockchain TEXT');
+      await db.execute('ALTER TABLE assets ADD COLUMN contractAddress TEXT');
     }
   }
 

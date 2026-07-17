@@ -28,6 +28,29 @@ class IndianEquityTicker {
   }
 }
 
+class CryptoTicker {
+  final int cmcId;
+  final String symbol;
+  final String name;
+  final String slug;
+  final String? blockchain;
+  final String? contractAddress;
+
+  const CryptoTicker({
+    required this.cmcId,
+    required this.symbol,
+    required this.name,
+    required this.slug,
+    this.blockchain,
+    this.contractAddress,
+  });
+
+  @override
+  String toString() {
+    return 'CryptoTicker(cmcId: $cmcId, symbol: $symbol, name: $name, slug: $slug, blockchain: $blockchain, contractAddress: $contractAddress)';
+  }
+}
+
 class TickerLoaderService {
   static final TickerLoaderService _instance = TickerLoaderService._internal();
   TickerLoaderService._internal();
@@ -35,9 +58,13 @@ class TickerLoaderService {
 
   List<IndianEquityTicker> _cachedTickers = [];
   bool _isLoading = false;
+  List<CryptoTicker> _cachedCryptoTickers = [];
+  bool _isLoadingCrypto = false;
 
   List<IndianEquityTicker> get cachedTickers => _cachedTickers;
   bool get isLoading => _isLoading;
+  List<CryptoTicker> get cachedCryptoTickers => _cachedCryptoTickers;
+  bool get isLoadingCrypto => _isLoadingCrypto;
 
   Future<List<IndianEquityTicker>> loadTickers() async {
     if (_cachedTickers.isNotEmpty) {
@@ -157,6 +184,74 @@ class TickerLoaderService {
     if (query.isEmpty) return _cachedTickers;
     final normalized = query.toUpperCase();
     return _cachedTickers.where((ticker) {
+      return ticker.symbol.toUpperCase().contains(normalized) ||
+          ticker.name.toUpperCase().contains(normalized);
+    }).toList();
+  }
+
+  Future<List<CryptoTicker>> loadCryptoTickers() async {
+    if (_cachedCryptoTickers.isNotEmpty) {
+      return _cachedCryptoTickers;
+    }
+    if (_isLoadingCrypto) {
+      while (_isLoadingCrypto) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      return _cachedCryptoTickers;
+    }
+
+    _isLoadingCrypto = true;
+    try {
+      final csvString = await rootBundle.loadString('assets/securities/crypto_ticker.csv');
+      final lines = csvString.split('\n');
+      if (lines.isEmpty) return [];
+
+      final List<CryptoTicker> tickers = [];
+      final headers = lines.first.split(',');
+      int cmcIdIdx = headers.indexOf('cmc_id');
+      int symbolIdx = headers.indexOf('symbol');
+      int nameIdx = headers.indexOf('name');
+      int slugIdx = headers.indexOf('slug');
+      int blockchainIdx = headers.indexOf('blockchain');
+      int contractIdx = headers.indexOf('contract_address');
+
+      for (int i = 1; i < lines.length; i++) {
+        final line = lines[i].trim();
+        if (line.isEmpty) continue;
+
+        final parts = line.split(',');
+        if (parts.length <= symbolIdx) continue;
+
+        final cmcIdStr = parts[cmcIdIdx];
+        final cmcId = int.tryParse(cmcIdStr) ?? 0;
+        final symbol = parts[symbolIdx];
+        final name = parts[nameIdx];
+        final slug = parts.length > slugIdx ? parts[slugIdx] : '';
+        final blockchain = parts.length > blockchainIdx && parts[blockchainIdx].isNotEmpty ? parts[blockchainIdx] : null;
+        final contractAddress = parts.length > contractIdx && parts[contractIdx].isNotEmpty ? parts[contractIdx] : null;
+
+        tickers.add(CryptoTicker(
+          cmcId: cmcId,
+          symbol: symbol,
+          name: name,
+          slug: slug,
+          blockchain: blockchain,
+          contractAddress: contractAddress,
+        ));
+      }
+      _cachedCryptoTickers = tickers;
+    } catch (e) {
+      print('Error parsing crypto ticker CSV: $e');
+    } finally {
+      _isLoadingCrypto = false;
+    }
+    return _cachedCryptoTickers;
+  }
+
+  List<CryptoTicker> searchCryptoTickers(String query) {
+    if (query.isEmpty) return _cachedCryptoTickers;
+    final normalized = query.toUpperCase();
+    return _cachedCryptoTickers.where((ticker) {
       return ticker.symbol.toUpperCase().contains(normalized) ||
           ticker.name.toUpperCase().contains(normalized);
     }).toList();

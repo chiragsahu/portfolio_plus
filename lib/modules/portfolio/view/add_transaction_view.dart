@@ -4,6 +4,7 @@ import 'package:portfolio_plus/models/account.dart';
 import 'package:portfolio_plus/models/transaction.dart';
 import 'package:portfolio_plus/models/asset.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/account_provider.dart';
+import 'package:portfolio_plus/modules/portfolio/provider/portfolio_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/transaction_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/view/widgets/searchable_ticker_dropdown.dart';
 import 'package:portfolio_plus/services/asset_repository.dart';
@@ -11,6 +12,7 @@ import 'package:portfolio_plus/services/ticker_loader_service.dart';
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/enums/currency.dart';
 import 'package:portfolio_plus/utils/enums/transaction.dart';
+import 'package:portfolio_plus/utils/enums/investment_type.dart';
 import 'package:portfolio_plus/utils/ts.dart';
 import 'package:portfolio_plus/utils/custom_widgets/custom_dropdown.dart';
 import 'package:portfolio_plus/utils/custom_widgets/input_text_field.dart';
@@ -41,7 +43,7 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
   int? _selectedAccountId;
   Currency _selectedFeeCurrency = Currency.inr;
   Currency _selectedQuoteCurrency = Currency.inr;
-  IndianEquityTicker? _selectedTicker;
+  dynamic _selectedTicker;
 
   @override
   void dispose() {
@@ -57,6 +59,11 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
   @override
   Widget build(BuildContext context) {
     final accountsAsync = ref.watch(accountsProvider);
+    final portfolioAsync = ref.watch(portfolioProvider(widget.portfolioId));
+    final isCrypto = portfolioAsync.maybeWhen(
+      data: (p) => p.investmentType == InvestmentType.crypto,
+      orElse: () => false,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -143,6 +150,7 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
               // Ticker Symbol Dropdown
               SearchableTickerDropdown(
                 initialValue: _selectedTicker?.symbol,
+                isCrypto: isCrypto,
                 onSelected: (ticker) {
                   setState(() {
                     _selectedTicker = ticker;
@@ -385,27 +393,64 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
       if (ticker.isNotEmpty) {
         final assetRepo = AssetRepository();
         var asset = await assetRepo.getAssetBySymbol(ticker);
+        
+        final portfolioAsync = ref.read(portfolioProvider(widget.portfolioId));
+        final isCrypto = portfolioAsync.maybeWhen(
+          data: (p) => p.investmentType == InvestmentType.crypto,
+          orElse: () => false,
+        );
+
         if (asset == null) {
           final newAsset = Asset(
             symbol: ticker,
             name: _selectedTicker?.name ?? ticker,
-            isin: _selectedTicker?.isin,
-            faceValue: _selectedTicker?.faceValue,
-            series: _selectedTicker?.series,
+            stock: _selectedTicker is IndianEquityTicker
+                ? StockMetadata(
+                    isin: _selectedTicker.isin,
+                    faceValue: _selectedTicker.faceValue,
+                    series: _selectedTicker.series,
+                  )
+                : null,
+            crypto: _selectedTicker is CryptoTicker
+                ? CryptoMetadata(
+                    cmcId: _selectedTicker.cmcId,
+                    slug: _selectedTicker.slug,
+                    blockchain: _selectedTicker.blockchain,
+                    contractAddress: _selectedTicker.contractAddress,
+                  )
+                : null,
             currentPrice: double.tryParse(_priceController.text) ?? 0.0,
             lastUpdated: DateTime.now(),
-            assetClass: 'stock',
+            assetClass: isCrypto ? 'crypto' : 'stock',
           );
           assetId = await assetRepo.createAsset(newAsset);
         } else {
           assetId = asset.id;
-          if (asset.isin == null || asset.faceValue == null || asset.series == null) {
-            final updatedAsset = asset.copyWith(
-              isin: asset.isin ?? _selectedTicker?.isin,
-              faceValue: asset.faceValue ?? _selectedTicker?.faceValue,
-              series: asset.series ?? _selectedTicker?.series,
-            );
-            await assetRepo.updateAsset(updatedAsset);
+          if (isCrypto) {
+            if (asset.crypto?.cmcId == null || asset.crypto?.slug == null) {
+              final cryptoTicker = _selectedTicker as CryptoTicker?;
+              final updatedAsset = asset.copyWith(
+                crypto: (asset.crypto ?? const CryptoMetadata()).copyWith(
+                  cmcId: asset.crypto?.cmcId ?? cryptoTicker?.cmcId,
+                  slug: asset.crypto?.slug ?? cryptoTicker?.slug,
+                  blockchain: asset.crypto?.blockchain ?? cryptoTicker?.blockchain,
+                  contractAddress: asset.crypto?.contractAddress ?? cryptoTicker?.contractAddress,
+                ),
+              );
+              await assetRepo.updateAsset(updatedAsset);
+            }
+          } else {
+            if (asset.stock?.isin == null || asset.stock?.faceValue == null || asset.stock?.series == null) {
+              final equityTicker = _selectedTicker as IndianEquityTicker?;
+              final updatedAsset = asset.copyWith(
+                stock: (asset.stock ?? const StockMetadata()).copyWith(
+                  isin: asset.stock?.isin ?? equityTicker?.isin,
+                  faceValue: asset.stock?.faceValue ?? equityTicker?.faceValue,
+                  series: asset.stock?.series ?? equityTicker?.series,
+                ),
+              );
+              await assetRepo.updateAsset(updatedAsset);
+            }
           }
           final price = double.tryParse(_priceController.text);
           if (price != null && assetId != null) {
