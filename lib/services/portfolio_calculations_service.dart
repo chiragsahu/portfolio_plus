@@ -1,6 +1,7 @@
 import 'dart:collection';
 import 'package:portfolio_plus/services/transaction_repository.dart';
 import 'package:portfolio_plus/services/asset_repository.dart';
+import 'package:portfolio_plus/models/asset.dart';
 import 'package:portfolio_plus/utils/enums/transaction.dart';
 
 /// Represents a single position lot with quantity and total cost
@@ -94,20 +95,6 @@ class PortfolioCalculationsService {
 
   PortfolioCalculationsService(this._transactionRepository, this._assetRepository);
 
-  /// Map of FIFO engines keyed by '${accountId}_${assetId}' for per-account+asset tracking
-  final Map<String, FifoPositionEngine> _engines = {};
-
-  /// Get or create a FIFO engine for the given account and asset
-  FifoPositionEngine _getEngine(int? accountId, int? assetId) {
-    final key = '${accountId ?? 'no_account'}_${assetId ?? 'no_asset'}';
-    return _engines[key] ??= FifoPositionEngine();
-  }
-
-  /// Clear all engines (for fresh calculations)
-  void _clearEngines() {
-    _engines.clear();
-  }
-
   /// Calculate portfolio summary with FIFO-based realized PnL
   Future<Map<String, dynamic>> calculatePortfolioSummary(
     int portfolioId,
@@ -144,6 +131,58 @@ class PortfolioCalculationsService {
           ? ((values['totalFees'] as double) / invested) * 100
           : 0,
     };
+  }
+
+  /// Calculate current holdings for a portfolio
+  Future<List<Map<String, dynamic>>> calculateHoldings(int portfolioId) async {
+    final values = await calculatePortfolioValues(portfolioId);
+    final engines = values['_engines'] as Map<String, FifoPositionEngine>;
+    
+    final Map<int, Map<String, dynamic>> holdingsByAsset = {};
+    
+    for (final entry in engines.entries) {
+      final keyParts = entry.key.split('|');
+      if (keyParts.length < 2) continue;
+      final assetIdStr = keyParts[1];
+      if (assetIdStr == 'none' || assetIdStr == 'null') continue;
+      
+      final assetId = int.tryParse(assetIdStr);
+      if (assetId == null) continue;
+      
+      final engine = entry.value;
+      if (engine.currentQuantity <= 0.0001) continue;
+      
+      if (!holdingsByAsset.containsKey(assetId)) {
+        final asset = await _assetRepository.getAssetById(assetId);
+        if (asset == null) continue;
+        
+        holdingsByAsset[assetId] = {
+          'asset': asset,
+          'quantity': 0.0,
+          'costBasis': 0.0,
+        };
+      }
+      
+      holdingsByAsset[assetId]!['quantity'] += engine.currentQuantity;
+      holdingsByAsset[assetId]!['costBasis'] += engine.currentCostBasis;
+    }
+    
+    final holdings = holdingsByAsset.values.toList();
+    for (var holding in holdings) {
+      final qty = holding['quantity'] as double;
+      final cost = holding['costBasis'] as double;
+      final asset = holding['asset'] as Asset;
+      
+      holding['averageCost'] = qty > 0 ? cost / qty : 0.0;
+      holding['currentValue'] = qty * asset.currentPrice;
+      holding['unrealizedPnL'] = holding['currentValue'] - cost;
+      holding['unrealizedPnLPercent'] = cost > 0 ? (holding['unrealizedPnL'] / cost) * 100 : 0.0;
+    }
+    
+    // Sort by current value descending
+    holdings.sort((a, b) => (b['currentValue'] as double).compareTo(a['currentValue'] as double));
+    
+    return holdings;
   }
 
   /// Calculate asset allocation (placeholder - needs asset data)
@@ -210,8 +249,13 @@ class PortfolioCalculationsService {
     };
   }
 
-  Future<Map<String, double>> calculatePortfolioValues(int portfolioId) async {
-    _clearEngines();
+  Future<Map<String, dynamic>> calculatePortfolioValues(int portfolioId) async {
+    final Map<String, FifoPositionEngine> engines = {};
+
+    FifoPositionEngine getEngine(int? accountId, int? assetId) {
+      final key = '${accountId ?? 'none'}|${assetId ?? 'none'}';
+      return engines[key] ??= FifoPositionEngine();
+    }
 
     final transactions = await _transactionRepository
         .getTransactionsByPortfolioId(portfolioId);
@@ -228,7 +272,7 @@ class PortfolioCalculationsService {
     double totalRealizedPnL = 0;
 
     for (final transaction in transactions) {
-      final engine = _getEngine(transaction.accountId, transaction.assetId);
+      final engine = getEngine(transaction.accountId, transaction.assetId);
       final double absoluteFee = transaction.fee != null ? transaction.amount * (transaction.fee! / 100) : 0.0;
 
       switch (transaction.type) {
@@ -277,7 +321,7 @@ class PortfolioCalculationsService {
 
     // Calculate unrealized PnL from remaining positions
     double totalUnrealizedPnL = 0;
-    for (final engine in _engines.values) {
+    for (final engine in engines.values) {
       // For unrealized PnL, we'd need current market prices
       // For now, assume current value equals cost basis
       totalUnrealizedPnL += 0; // Placeholder
@@ -299,7 +343,8 @@ class PortfolioCalculationsService {
       'totalPnL': totalPnL,
       'totalReturnPercent': totalInvested > 0
           ? (totalPnL / totalInvested) * 100
-          : 0,
+          : 0.0,
+      '_engines': engines,
     };
   }
 }

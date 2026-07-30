@@ -4,6 +4,7 @@ import 'package:portfolio_plus/services/portfolio_repository.dart';
 import 'package:portfolio_plus/services/transaction_repository.dart';
 
 import 'package:portfolio_plus/services/asset_repository.dart';
+import 'package:portfolio_plus/modules/portfolio/provider/transaction_provider.dart';
 
 // Provider for transaction repository
 final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
@@ -29,20 +30,30 @@ final portfolioCalculationsServiceProvider = Provider<PortfolioCalculationsServi
 
 // Provider for portfolio summary data
 final portfolioSummaryProvider = FutureProvider.family<Map<String, dynamic>, int>((ref, portfolioId) async {
+  ref.watch(transactionListProvider(portfolioId));
   final calculationsService = ref.watch(portfolioCalculationsServiceProvider);
   return await calculationsService.calculatePortfolioSummary(portfolioId);
 });
 
 // Provider for portfolio performance metrics
 final portfolioPerformanceProvider = FutureProvider.family<Map<String, dynamic>, int>((ref, portfolioId) async {
+  ref.watch(transactionListProvider(portfolioId));
   final calculationsService = ref.watch(portfolioCalculationsServiceProvider);
   return await calculationsService.calculatePerformanceMetrics(portfolioId);
 });
 
 // Provider for portfolio asset allocation
 final portfolioAllocationProvider = FutureProvider.family<Map<String, dynamic>, int>((ref, portfolioId) async {
+  ref.watch(transactionListProvider(portfolioId));
   final calculationsService = ref.watch(portfolioCalculationsServiceProvider);
   return await calculationsService.calculateAssetAllocation(portfolioId);
+});
+
+// Provider for portfolio holdings
+final portfolioHoldingsProvider = FutureProvider.family<List<Map<String, dynamic>>, int>((ref, portfolioId) async {
+  ref.watch(transactionListProvider(portfolioId));
+  final calculationsService = ref.watch(portfolioCalculationsServiceProvider);
+  return await calculationsService.calculateHoldings(portfolioId);
 });
 
 // Provider for historical performance

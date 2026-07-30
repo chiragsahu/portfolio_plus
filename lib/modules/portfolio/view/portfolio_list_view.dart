@@ -133,12 +133,8 @@ class _PortfolioListViewState extends ConsumerState<PortfolioListView> {
       ),
       body: portfoliosAsync.when(
         data: (portfolios) {
-          return RefreshIndicator(
-            onRefresh: () async {
-              await ref.read(portfolioListProvider.notifier).loadPortfolios();
-            },
-            child: CustomScrollView(
-              slivers: [
+          return CustomScrollView(
+            slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -213,8 +209,7 @@ class _PortfolioListViewState extends ConsumerState<PortfolioListView> {
                     ),
                   ),
               ],
-            ),
-          );
+            );
         },
         loading: () => const Center(
           child: CircularProgressIndicator(),

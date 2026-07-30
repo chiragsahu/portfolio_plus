@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:portfolio_plus/models/account.dart';
 import 'package:portfolio_plus/models/transaction.dart';
 import 'package:portfolio_plus/models/asset.dart';
-import 'package:portfolio_plus/modules/portfolio/provider/account_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/portfolio_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/transaction_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/view/widgets/searchable_ticker_dropdown.dart';
@@ -19,10 +17,12 @@ import 'package:portfolio_plus/utils/custom_widgets/input_text_field.dart';
 
 class AddTransactionView extends ConsumerStatefulWidget {
   final int portfolioId;
+  final String? defaultSymbol;
 
   const AddTransactionView({
     super.key,
     required this.portfolioId,
+    this.defaultSymbol,
   });
 
   @override
@@ -39,8 +39,6 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
   final _notesController = TextEditingController();
   TransactionType _selectedType = TransactionType.buy;
   DateTime _selectedDate = DateTime.now();
-  AccountModel? _selectedAccountModel;
-  int? _selectedAccountId;
   Currency _selectedFeeCurrency = Currency.inr;
   Currency _selectedQuoteCurrency = Currency.inr;
   dynamic _selectedTicker;
@@ -57,8 +55,15 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.defaultSymbol != null) {
+      _tickerController.text = widget.defaultSymbol!;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final accountsAsync = ref.watch(accountsProvider);
     final portfolioAsync = ref.watch(portfolioProvider(widget.portfolioId));
     final isCrypto = portfolioAsync.maybeWhen(
       data: (p) => p.investmentType == InvestmentType.crypto,
@@ -78,36 +83,6 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Account selection
-              Text(
-                'Account (Optional)',
-                style: Ts.semiBold16(AppColors.black),
-              ),
-              const SizedBox(height: 8),
-              accountsAsync.when(
-                data: (accounts) => CustomDropdown<AccountModel?>(
-                  selectedItem: _selectedAccountModel,
-                  items: [
-                    null,
-                    ...accounts,
-                  ],
-                  itemToString: (account) => account == null
-                      ? 'No account selected'
-                      : '${account.name} (${account.baseCurrency?.displayName ?? 'No currency'})',
-                  onChanged: (account) {
-                    setState(() {
-                      _selectedAccountModel = account;
-                      _selectedAccountId = account?.id;
-                    });
-                  },
-                  hintText: 'Select account',
-                  borderRadius: 12,
-                ),
-                loading: () => const CircularProgressIndicator(),
-                error: (error, stack) => Text('Error loading accounts: $error'),
-              ),
-              const SizedBox(height: 20),
-
               // Transaction type
               Text(
                 'Transaction Type',
@@ -149,8 +124,9 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
 
               // Ticker Symbol Dropdown
               SearchableTickerDropdown(
-                initialValue: _selectedTicker?.symbol,
+                initialValue: widget.defaultSymbol ?? _selectedTicker?.symbol,
                 isCrypto: isCrypto,
+                enabled: widget.defaultSymbol == null,
                 onSelected: (ticker) {
                   setState(() {
                     _selectedTicker = ticker;
@@ -388,8 +364,20 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
 
   void _addTransaction() async {
     if (_formKey.currentState!.validate()) {
-      int? assetId;
       final ticker = _tickerController.text.trim().toUpperCase();
+      if (ticker.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please select a ticker symbol'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      int? assetId;
       if (ticker.isNotEmpty) {
         final assetRepo = AssetRepository();
         var asset = await assetRepo.getAssetBySymbol(ticker);
@@ -461,7 +449,6 @@ class _AddTransactionViewState extends ConsumerState<AddTransactionView> {
 
       final transaction = TransactionModel(
         portfolioId: widget.portfolioId,
-        accountId: _selectedAccountId,
         assetId: assetId,
         type: _selectedType,
         quantity: double.parse(_quantityController.text),

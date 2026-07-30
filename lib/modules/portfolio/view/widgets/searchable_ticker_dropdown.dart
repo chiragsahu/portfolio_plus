@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nb_utils/nb_utils.dart';
 import 'package:portfolio_plus/services/ticker_loader_service.dart';
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/ts.dart';
@@ -10,6 +9,7 @@ class SearchableTickerDropdown extends StatefulWidget {
   final String label;
   final String hint;
   final bool isCrypto;
+  final bool enabled;
 
   const SearchableTickerDropdown({
     super.key,
@@ -18,10 +18,12 @@ class SearchableTickerDropdown extends StatefulWidget {
     this.label = 'Search Ticker Symbol',
     this.hint = 'Search by Symbol or Company Name',
     this.isCrypto = false,
+    this.enabled = true,
   });
 
   @override
-  State<SearchableTickerDropdown> createState() => _SearchableTickerDropdownState();
+  State<SearchableTickerDropdown> createState() =>
+      _SearchableTickerDropdownState();
 }
 
 class _SearchableTickerDropdownState extends State<SearchableTickerDropdown> {
@@ -126,18 +128,17 @@ class _SearchableTickerDropdownState extends State<SearchableTickerDropdown> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: Ts.semiBold16(AppColors.black),
-        ),
+        Text(widget.label, style: Ts.semiBold16(AppColors.black)),
         const SizedBox(height: 8),
         InkWell(
-          onTap: _isLoading ? null : _showSearchBottomSheet,
+          onTap: (!widget.enabled || _isLoading)
+              ? null
+              : _showSearchBottomSheet,
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: widget.enabled ? Colors.grey[100] : Colors.grey[200],
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey[300]!),
             ),
@@ -149,15 +150,22 @@ class _SearchableTickerDropdownState extends State<SearchableTickerDropdown> {
                   child: _isLoading
                       ? const Text(
                           'Loading tickers...',
-                          style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontStyle: FontStyle.italic,
+                          ),
                         )
                       : Text(
                           _selectedSymbol != null
                               ? '$_selectedSymbol - $_selectedName'
                               : 'Select Ticker Symbol',
                           style: TextStyle(
-                            color: _selectedSymbol != null ? AppColors.black : Colors.grey,
-                            fontWeight: _selectedSymbol != null ? FontWeight.w500 : FontWeight.normal,
+                            color: _selectedSymbol != null
+                                ? AppColors.black
+                                : Colors.grey,
+                            fontWeight: _selectedSymbol != null
+                                ? FontWeight.w500
+                                : FontWeight.normal,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -197,7 +205,9 @@ class _TickerSearchSheetState extends State<_TickerSearchSheet> {
   @override
   void initState() {
     super.initState();
-    _results = widget.isCrypto ? widget.tickerLoader.cachedCryptoTickers : widget.tickerLoader.cachedTickers;
+    _results = widget.isCrypto
+        ? widget.tickerLoader.cachedCryptoTickers
+        : widget.tickerLoader.cachedTickers;
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -275,8 +285,13 @@ class _TickerSearchSheetState extends State<_TickerSearchSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  _isSearching ? 'Search Results' : (widget.isCrypto ? 'All Cryptos' : 'All Equities'),
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+                  _isSearching
+                      ? 'Search Results'
+                      : (widget.isCrypto ? 'All Cryptos' : 'All Equities'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
                 ),
                 Text(
                   '${_results.length} found',
@@ -301,13 +316,21 @@ class _TickerSearchSheetState extends State<_TickerSearchSheet> {
                       children: [
                         Text(
                           ticker.symbol,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         if (ticker.blockchain != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryColor.withValues(alpha: 0.1),
+                              color: AppColors.primaryColor.withValues(
+                                alpha: 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -327,7 +350,10 @@ class _TickerSearchSheetState extends State<_TickerSearchSheet> {
                         const SizedBox(height: 4),
                         Text(
                           ticker.name,
-                          style: TextStyle(color: Colors.grey[800], fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.grey[800],
+                            fontSize: 13,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -335,7 +361,10 @@ class _TickerSearchSheetState extends State<_TickerSearchSheet> {
                           const SizedBox(height: 2),
                           Text(
                             'Addr: ${ticker.contractAddress}',
-                            style: const TextStyle(color: Colors.grey, fontSize: 11),
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -352,13 +381,21 @@ class _TickerSearchSheetState extends State<_TickerSearchSheet> {
                       children: [
                         Text(
                           ticker.symbol,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         if (ticker.series.isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryColor.withValues(alpha: 0.1),
+                              color: AppColors.primaryColor.withValues(
+                                alpha: 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -378,7 +415,10 @@ class _TickerSearchSheetState extends State<_TickerSearchSheet> {
                         const SizedBox(height: 4),
                         Text(
                           ticker.name,
-                          style: TextStyle(color: Colors.grey[800], fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.grey[800],
+                            fontSize: 13,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -388,11 +428,17 @@ class _TickerSearchSheetState extends State<_TickerSearchSheet> {
                           children: [
                             Text(
                               'ISIN: ${ticker.isin}',
-                              style: const TextStyle(color: Colors.grey, fontSize: 11),
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 11,
+                              ),
                             ),
                             Text(
                               'Face Value: ₹${ticker.faceValue}',
-                              style: const TextStyle(color: Colors.grey, fontSize: 11),
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 11,
+                              ),
                             ),
                           ],
                         ),

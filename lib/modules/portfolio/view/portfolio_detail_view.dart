@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:portfolio_plus/models/transaction.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/portfolio_provider.dart';
+import 'package:portfolio_plus/modules/portfolio/provider/portfolio_calculations_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/provider/transaction_provider.dart';
 import 'package:portfolio_plus/modules/portfolio/view/add_transaction_view.dart';
 import 'package:portfolio_plus/modules/portfolio/view/edit_transaction_view.dart';
 import 'package:portfolio_plus/modules/portfolio/view/asset_allocation_view.dart';
 import 'package:portfolio_plus/modules/portfolio/view/portfolio_analytics_view.dart';
 import 'package:portfolio_plus/modules/portfolio/view/portfolio_export_view.dart';
+import 'package:portfolio_plus/modules/portfolio/view/security_detail_view.dart';
 import 'package:portfolio_plus/utils/colors.dart';
 import 'package:portfolio_plus/utils/enums/transaction.dart';
 import 'package:portfolio_plus/utils/ts.dart';
@@ -31,14 +33,10 @@ class PortfolioDetailView extends ConsumerStatefulWidget {
 }
 
 class _PortfolioDetailViewState extends ConsumerState<PortfolioDetailView> {
-  String _selectedFilter = 'all';
-  bool _selectionMode = false;
-  final Set<int> _selectedIds = {};
-
   @override
   Widget build(BuildContext context) {
     final portfolioAsync = ref.watch(portfolioProvider(widget.portfolioId));
-    final transactionsAsync = ref.watch(transactionListProvider(widget.portfolioId));
+    final holdingsAsync = ref.watch(portfolioHoldingsProvider(widget.portfolioId));
 
     return Scaffold(
       appBar: AppBar(
@@ -91,32 +89,21 @@ class _PortfolioDetailViewState extends ConsumerState<PortfolioDetailView> {
             },
             tooltip: 'Export',
           ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddTransactionView(
-                    portfolioId: widget.portfolioId,
-                  ),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(_selectionMode ? Icons.close : Icons.select_all),
-            onPressed: () {
-              setState(() {
-                _selectionMode = !_selectionMode;
-                if (!_selectionMode) {
-                  _selectedIds.clear();
-                }
-              });
-            },
-            tooltip: _selectionMode ? 'Cancel selection' : 'Multi-select',
-          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddTransactionView(
+                portfolioId: widget.portfolioId,
+              ),
+            ),
+          );
+        },
+        backgroundColor: AppColors.primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       body: portfolioAsync.when(
         data: (portfolio) {
@@ -182,61 +169,24 @@ class _PortfolioDetailViewState extends ConsumerState<PortfolioDetailView> {
                 ),
               ),
               
-              // Filter chips
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildFilterChip('all', 'All'),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('buy', 'Buy'),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('sell', 'Sell'),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('dividend', 'Dividend'),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('deposit', 'Deposit'),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('withdrawal', 'Withdrawal'),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Transactions list
+              // Holdings list
               Expanded(
-                child: transactionsAsync.when(
-                  data: (transactions) {
-                    if (transactions.isEmpty) {
+                child: holdingsAsync.when(
+                  data: (holdings) {
+                    if (holdings.isEmpty) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.receipt_long,
+                              Icons.account_balance_wallet,
                               size: 64,
                               color: Colors.grey[400],
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No transactions yet',
+                              'No holdings yet',
                               style: Ts.regular18(Colors.grey[600] ?? Colors.grey),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AddTransactionView(
-                                      portfolioId: widget.portfolioId,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: const Text('Add Your First Transaction'),
                             ),
                           ],
                         ),
@@ -244,38 +194,22 @@ class _PortfolioDetailViewState extends ConsumerState<PortfolioDetailView> {
                     }
 
                     return ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: transactions.length,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: holdings.length,
                       itemBuilder: (context, index) {
-                        final transaction = transactions[index];
-                        return TransactionCard(
-                          transaction: transaction,
-                          selectionMode: _selectionMode,
-                          selected: transaction.id != null && _selectedIds.contains(transaction.id),
-                          onSelectedChanged: (checked) {
-                            final id = transaction.id;
-                            if (id == null) return;
-                            setState(() {
-                              if (checked == true) {
-                                _selectedIds.add(id);
-                              } else {
-                                _selectedIds.remove(id);
-                              }
-                            });
-                          },
+                        final holding = holdings[index];
+                        return HoldingCard(
+                          holding: holding,
                           onTap: () {
-                            final id = transaction.id;
-                            if (_selectionMode && id != null) {
-                              setState(() {
-                                if (_selectedIds.contains(id)) {
-                                  _selectedIds.remove(id);
-                                } else {
-                                  _selectedIds.add(id);
-                                }
-                              });
-                            } else {
-                              // TODO: Show transaction details
-                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => SecurityDetailView(
+                                  portfolioId: widget.portfolioId,
+                                  asset: holding['asset'] as Asset,
+                                ),
+                              ),
+                            );
                           },
                         );
                       },
@@ -295,7 +229,7 @@ class _PortfolioDetailViewState extends ConsumerState<PortfolioDetailView> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Error loading transactions',
+                          'Error loading holdings',
                           style: Ts.regular18(Colors.red[600] ?? Colors.red),
                         ),
                         const SizedBox(height: 8),
@@ -303,13 +237,6 @@ class _PortfolioDetailViewState extends ConsumerState<PortfolioDetailView> {
                           error.toString(),
                           style: Ts.regular14(Colors.grey[600] ?? Colors.grey),
                           textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            ref.read(transactionListProvider(widget.portfolioId).notifier).loadTransactions();
-                          },
-                          child: const Text('Retry'),
                         ),
                       ],
                     ),
@@ -349,22 +276,75 @@ class _PortfolioDetailViewState extends ConsumerState<PortfolioDetailView> {
     );
   }
 
-  Widget _buildFilterChip(String value, String label) {
-    final isSelected = _selectedFilter == value;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() {
-          _selectedFilter = value;
-        });
-        ref.read(transactionListProvider(widget.portfolioId).notifier).filterTransactionsByType(value);
-      },
-      backgroundColor: isSelected ? AppColors.primaryColor.withOpacity(0.1) : Colors.grey[200],
-      selectedColor: AppColors.primaryColor.withOpacity(0.2),
-      labelStyle: TextStyle(
-        color: isSelected ? AppColors.primaryColor : Colors.grey[700],
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+}
+
+class HoldingCard extends StatelessWidget {
+  final Map<String, dynamic> holding;
+  final VoidCallback onTap;
+
+  const HoldingCard({
+    super.key,
+    required this.holding,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = holding['asset'] as Asset;
+    final qty = holding['quantity'] as double;
+    final avgCost = holding['averageCost'] as double;
+    final currentVal = holding['currentValue'] as double;
+    final unrealizedPnL = holding['unrealizedPnL'] as double;
+    final unrealizedPnLPercent = holding['unrealizedPnLPercent'] as double;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      asset.name.isNotEmpty ? asset.name : asset.symbol,
+                      style: Ts.semiBold16(AppColors.black),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Qty: ${qty.toStringAsFixed(2)} @ ${avgCost.toStringAsFixed(2)}',
+                      style: Ts.regular14(AppColors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    currentVal.toStringAsFixed(2),
+                    style: Ts.semiBold16(AppColors.black),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${unrealizedPnL >= 0 ? '+' : ''}${unrealizedPnL.toStringAsFixed(2)} (${unrealizedPnLPercent.toStringAsFixed(2)}%)',
+                    style: Ts.semiBold14(
+                      unrealizedPnL >= 0 ? Colors.green : Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

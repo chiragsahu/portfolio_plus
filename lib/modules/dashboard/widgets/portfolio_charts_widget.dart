@@ -194,7 +194,7 @@ class PortfolioChartsWidget extends ConsumerWidget {
                   alignment: BarChartAlignment.spaceAround,
                   maxY: topPerformers.isNotEmpty 
                       ? topPerformers
-                          .map((p) => (p['performance']['totalReturnPercentage'] as double))
+                          .map((p) => (p['performance']['totalReturnPercentage'] as num).toDouble())
                           .reduce((a, b) => a > b ? a : b) * 1.2
                       : 100,
                   barTouchData: BarTouchData(
@@ -203,7 +203,7 @@ class PortfolioChartsWidget extends ConsumerWidget {
                       getTooltipItem: (group, groupIndex, rod, rodIndex) {
                         final portfolio = topPerformers[group.x.toInt()];
                         final name = portfolio['portfolio'].name as String;
-                        final returnPercentage = portfolio['performance']['totalReturnPercentage'] as double;
+                        final returnPercentage = (portfolio['performance']['totalReturnPercentage'] as num).toDouble();
                         return BarTooltipItem(
                           '$name\n${returnPercentage.toStringAsFixed(2)}%',
                           Ts.regular12(Colors.white),
@@ -252,7 +252,7 @@ class PortfolioChartsWidget extends ConsumerWidget {
                   barGroups: topPerformers.asMap().entries.map((entry) {
                     final index = entry.key;
                     final portfolio = entry.value;
-                    final returnPercentage = portfolio['performance']['totalReturnPercentage'] as double;
+                    final returnPercentage = (portfolio['performance']['totalReturnPercentage'] as num).toDouble();
                     
                     return BarChartGroupData(
                       x: index,
