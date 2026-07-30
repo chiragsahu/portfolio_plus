@@ -1,24 +1,26 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:portfolio_plus/services/asset_repository.dart';
 import 'package:portfolio_plus/models/asset.dart';
 import 'package:portfolio_plus/models/coinmarketcap_quote.dart';
 
 class CoinMarketCapService {
   final AssetRepository _assetRepository;
-  static const String _baseUrl = 'https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/historical';
+  static const String _baseUrl =
+      'https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/historical';
 
   CoinMarketCapService({AssetRepository? assetRepository})
-      : _assetRepository = assetRepository ?? AssetRepository();
+    : _assetRepository = assetRepository ?? AssetRepository();
 
   /// Retrieve the CoinMarketCap API key from the environment variables
   String get _apiKey {
-    final envKey = Platform.environment['cmc_api_key'];
+    final envKey = dotenv.env['CMC_API_KEY'];
     if (envKey != null && envKey.isNotEmpty) {
       return envKey;
     }
-    return const String.fromEnvironment('cmc_api_key');
+    return const String.fromEnvironment('CMC_API_KEY');
   }
 
   /// Request headers containing authorization
@@ -31,9 +33,15 @@ class CoinMarketCapService {
   }
 
   /// Process response model to extract and update crypto prices in the database
-  Future<void> _processResponseModel(CmcHistoricalResponse responseModel) async {
+  Future<void> _processResponseModel(
+    CmcHistoricalResponse responseModel,
+  ) async {
     final assets = await _assetRepository.getAllAssets();
-    final cryptoAssets = assets.where((a) => a.assetClass.toLowerCase() == 'crypto' || a.crypto != null).toList();
+    final cryptoAssets = assets
+        .where(
+          (a) => a.assetClass.toLowerCase() == 'crypto' || a.crypto != null,
+        )
+        .toList();
 
     for (var entry in responseModel.data.entries) {
       final coinData = entry.value;
@@ -55,14 +63,17 @@ class CoinMarketCapService {
             asset.symbol.toUpperCase() == symbol.toUpperCase()) {
           isMatch = true;
           // Update the asset metadata with the fetched cmcId
-          final updatedCrypto = (asset.crypto ?? const CryptoMetadata()).copyWith(cmcId: id);
+          final updatedCrypto = (asset.crypto ?? const CryptoMetadata())
+              .copyWith(cmcId: id);
           final updatedAsset = asset.copyWith(crypto: updatedCrypto);
           await _assetRepository.updateAsset(updatedAsset);
         }
 
         if (isMatch && asset.id != null) {
           await _assetRepository.updateAssetPrice(asset.id!, price);
-          print('Updated price of ${asset.symbol} ($symbol) to USD $price via historical quotes');
+          print(
+            'Updated price of ${asset.symbol} ($symbol) to USD $price via historical quotes',
+          );
         }
       }
     }
@@ -98,7 +109,9 @@ class CoinMarketCapService {
         final responseModel = CmcHistoricalResponse.fromJson(decoded);
         await _processResponseModel(responseModel);
       } else {
-        print('Error fetching historical quotes: ${response.statusCode} - ${response.body}');
+        print(
+          'Error fetching historical quotes: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       print('Exception fetching historical quotes: $e');

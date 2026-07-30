@@ -100,9 +100,9 @@ final allPortfoliosSummaryProvider = FutureProvider<Map<String, dynamic>>((ref) 
       final summary = await calculationsService.calculatePortfolioSummary(portfolio.id!);
       final performance = await calculationsService.calculatePerformanceMetrics(portfolio.id!);
       
-      totalValue += summary['totalValue'] as double;
-      totalInvested += summary['investedAmount'] as double;
-      totalPnL += summary['totalPnL'] as double;
+      totalValue += (summary['totalValue'] as num).toDouble();
+      totalInvested += (summary['investedAmount'] as num).toDouble();
+      totalPnL += (summary['totalPnL'] as num).toDouble();
       
       portfolioPerformances.add({
         'portfolio': portfolio,
@@ -117,8 +117,8 @@ final allPortfoliosSummaryProvider = FutureProvider<Map<String, dynamic>>((ref) 
   
   // Sort portfolios by return percentage
   portfolioPerformances.sort((a, b) {
-    final aReturn = a['performance']['totalReturnPercentage'] as double;
-    final bReturn = b['performance']['totalReturnPercentage'] as double;
+    final aReturn = (a['performance']['totalReturnPercentage'] as num).toDouble();
+    final bReturn = (b['performance']['totalReturnPercentage'] as num).toDouble();
     return bReturn.compareTo(aReturn);
   });
   
