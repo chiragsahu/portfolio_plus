@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:portfolio_plus/services/coinmarketcap_service.dart';
 
 import '../../dashboard/view/dashboard_screen.dart';
 import '../../portfolio/provider/portfolio_provider.dart';
@@ -8,9 +9,14 @@ import '../../profile/view/profile_screen.dart';
 import '../../tools/view/tools_screen.dart';
 import '../provider/bottomnav_ctrl.dart';
 
-class HomePageScreen extends ConsumerWidget {
+class HomePageScreen extends ConsumerStatefulWidget {
   const HomePageScreen({super.key});
 
+  @override
+  ConsumerState<HomePageScreen> createState() => _HomePageScreenState();
+}
+
+class _HomePageScreenState extends ConsumerState<HomePageScreen> {
   final bottomNavigationBarItems = const [
     BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Dashboard'),
     BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: 'Portfolio'),
@@ -33,7 +39,19 @@ class HomePageScreen extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      CoinMarketCapService().fetchListings().then((_) {
+        if (mounted) {
+          ref.read(portfolioListProvider.notifier).loadPortfolios();
+        }
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final bottomNavProvider = ref.watch(bottomNavStateProvider);
     return SafeArea(
       child: Scaffold(
@@ -58,8 +76,8 @@ class HomePageScreen extends ConsumerWidget {
         ),
         body: RefreshIndicator(
           onRefresh: () async {
-            // Refresh all providers
-            ref.read(portfolioListProvider.notifier).loadPortfolios();
+            await CoinMarketCapService().refreshAllCryptoPrices();
+            await ref.read(portfolioListProvider.notifier).loadPortfolios();
           },
           child: Center(child: pages[bottomNavProvider.index]),
         ),

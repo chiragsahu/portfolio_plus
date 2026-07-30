@@ -47,3 +47,4 @@ app.*.map.json
 
 # App tasks tracker (not version controlled)
 /app_tasks.md
+.env
