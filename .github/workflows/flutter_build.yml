@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/cirruslabs/flutter:3.29.0
+      image: ghcr.io/cirruslabs/flutter:stable
 
     steps:
       - name: Checkout Repository
