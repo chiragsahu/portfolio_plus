@@ -2,15 +2,14 @@ name: Flutter Android Build
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: cirrusci/flutter:3.29.0 # Pre-configured with Flutter, JDK, & Android SDKs
+      image: ghcr.io/cirruslabs/flutter:3.29.0
 
     steps:
       - name: Checkout Repository
