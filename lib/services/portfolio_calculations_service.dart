@@ -107,6 +107,14 @@ class PortfolioCalculationsService {
       'totalDividends': values['totalDividends'],
       'totalFees': values['totalFees'],
       'totalPnLPercentage': values['totalReturnPercent'] ?? 0.0,
+      'buyTransactions': values['buyTransactions'] ?? 0,
+      'sellTransactions': values['sellTransactions'] ?? 0,
+      'dividendTransactions': values['dividendTransactions'] ?? 0,
+      'transactionCount': values['transactionCount'] ?? 0,
+      'realizedTrades': values['realizedTrades'] ?? 0.0,
+      'realizedDividends': values['realizedDividends'] ?? 0.0,
+      'realizedTotal': values['realizedTotal'] ?? 0.0,
+      'unrealizedPnL': values['unrealizedPnL'] ?? 0.0,
     };
   }
 
@@ -214,7 +222,8 @@ class PortfolioCalculationsService {
 
       final price = asset.currentPrice > 0 ? asset.currentPrice : 0.0;
       final value = qty * price;
-      final key = asset.symbol.isNotEmpty ? asset.symbol : asset.name;
+      // Show ticker name instead of symbol/number
+      final key = asset.name.isNotEmpty ? asset.name : asset.symbol;
       assetValues[key] = value;
       totalValue += value;
     }
@@ -271,6 +280,11 @@ class PortfolioCalculationsService {
     double totalFees = 0;
     double totalRealizedPnL = 0;
 
+    int buyTransactions = 0;
+    int sellTransactions = 0;
+    int dividendTransactions = 0;
+    int transactionCount = transactions.length;
+
     for (final transaction in transactions) {
       final engine = getEngine(transaction.accountId, transaction.assetId);
       final double absoluteFee = transaction.fee != null ? transaction.amount * (transaction.fee! / 100) : 0.0;
@@ -280,6 +294,7 @@ class PortfolioCalculationsService {
           engine.addBuy(transaction.quantity, transaction.amount + absoluteFee);
           totalInvested += transaction.amount + absoluteFee;
           totalFees += absoluteFee;
+          buyTransactions++;
           break;
 
         case TransactionType.sell:
@@ -290,6 +305,7 @@ class PortfolioCalculationsService {
           totalSold += transaction.amount - absoluteFee;
           totalRealizedPnL += realizedPnL;
           totalFees += absoluteFee;
+          sellTransactions++;
           
           if (transaction.realizedPnLPerTx != realizedPnL) {
             await _transactionRepository.updateTransaction(
@@ -300,6 +316,7 @@ class PortfolioCalculationsService {
 
         case TransactionType.dividend:
           totalDividends += transaction.amount;
+          dividendTransactions++;
           break;
 
         case TransactionType.deposit:
@@ -344,6 +361,14 @@ class PortfolioCalculationsService {
       'totalReturnPercent': totalInvested > 0
           ? (totalPnL / totalInvested) * 100
           : 0.0,
+      'buyTransactions': buyTransactions,
+      'sellTransactions': sellTransactions,
+      'dividendTransactions': dividendTransactions,
+      'transactionCount': transactionCount,
+      'realizedTrades': totalRealizedPnL,
+      'realizedDividends': totalDividends,
+      'realizedTotal': totalRealizedPnL + totalDividends,
+      'unrealizedPnL': totalUnrealizedPnL,
       '_engines': engines,
     };
   }
